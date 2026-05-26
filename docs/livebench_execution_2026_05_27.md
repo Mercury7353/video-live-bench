@@ -65,6 +65,8 @@ Current run:
   JSON exports into download candidate JSONL while excluding already attempted ids.
 - Started an extra 200-candidate stage0 fresh-video pool because the first 120
   candidates may not yield 100 usable downloads.
+- Started an additional 300-candidate `fusion_all_vides` short-video fast lane
+  at 240p/low retry to reach the 100-video target faster.
 
 ### Step 3: Harness Evidence Packs
 
@@ -173,3 +175,4 @@ Success criteria:
 - 2026-05-27: Added local-video upload mode for harness-first Gemini generation.
 - 2026-05-27: Smoke-tested harness-first generation and local-video evaluation on 1 video / 2 items.
 - 2026-05-27: Expanded video acquisition with a 200-candidate stage0 fresh-video pool.
+- 2026-05-27: Added a 300-candidate short-video fast lane from `fusion_all_vides`.
