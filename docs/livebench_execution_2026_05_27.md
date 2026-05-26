@@ -138,6 +138,9 @@ Actions:
 - `generate_from_harness.py` now accepts `--seed-examples` and
   `--require-seed-examples`, records `benchmark_seed_ids`, and marks generated
   rows as `benchmark_seed_plus_harness_evidence`.
+- Seed examples are stratified by `task_type` by default; the field can be
+  changed to other Video-MME subtypes such as `sub_category`, `duration`, or
+  composite fields like `task_type,domain`.
 - Production V2 runs should use `--include-local-video` so the generator sees the
   original video along with the harness evidence and benchmark seed examples.
 
@@ -265,3 +268,5 @@ Success criteria:
   gates; only 2/150 V1 candidates survived.
 - 2026-05-27: Added Video-MME seed-bank preparation and wired benchmark seeds into
   harness-first Gemini video generation.
+- 2026-05-27: Added stratified seed sampling so Video-MME subtypes do not get
+  sampled according to raw row frequency.

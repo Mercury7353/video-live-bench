@@ -197,6 +197,7 @@ python stage4_self_evolve/generate_from_harness.py \
   --items-per-video 2 \
   --seed-examples stage4_self_evolve/outputs/benchmark_seed_bank_videomme.jsonl \
   --seed-examples-per-video 5 \
+  --seed-stratify-fields task_type \
   --require-seed-examples \
   --include-local-video
 ```
@@ -204,6 +205,10 @@ python stage4_self_evolve/generate_from_harness.py \
 Rows generated this way record `benchmark_seed_ids` and
 `benchmark_seed_sources`, so later validation can analyze which seed families
 produce hard, valid items.
+
+Seed sampling is stratified by `task_type` by default. Override
+`--seed-stratify-fields` to uniformly sample other Video-MME subtypes, for
+example `sub_category` or `task_type,domain`.
 
 ## API Keys
 

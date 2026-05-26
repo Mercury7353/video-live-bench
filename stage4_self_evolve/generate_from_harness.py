@@ -52,6 +52,60 @@ def load_seed_examples(path: Optional[Path]) -> List[Dict[str, Any]]:
     return read_jsonl(path)
 
 
+def parse_seed_stratify_fields(value: str) -> List[str]:
+    return [field.strip() for field in value.split(",") if field.strip()]
+
+
+def seed_matches_skills(seed: Dict[str, Any], skills: Set[str]) -> bool:
+    if not skills:
+        return False
+    texts = [
+        str(seed.get("task_type", "")).lower(),
+        str(seed.get("capability", "")).lower(),
+        " ".join(str(item).lower() for item in seed.get("seed_style_notes") or []),
+    ]
+    return any(skill and any(skill in text or text in skill for text in texts) for skill in skills)
+
+
+def stratified_seed_sample(
+    seeds: List[Dict[str, Any]],
+    count: int,
+    fields: List[str],
+    rng: random.Random,
+) -> List[Dict[str, Any]]:
+    if not fields:
+        return rng.sample(seeds, min(count, len(seeds)))
+    groups: Dict[tuple, List[Dict[str, Any]]] = {}
+    for seed in seeds:
+        key = tuple(str(seed.get(field) or "unknown") for field in fields)
+        groups.setdefault(key, []).append(seed)
+    for bucket in groups.values():
+        rng.shuffle(bucket)
+    keys = list(groups)
+    rng.shuffle(keys)
+    picked: List[Dict[str, Any]] = []
+    seen = set()
+    while len(picked) < count and keys:
+        progressed = False
+        rng.shuffle(keys)
+        for key in list(keys):
+            bucket = groups[key]
+            while bucket and (bucket[-1].get("seed_id") or id(bucket[-1])) in seen:
+                bucket.pop()
+            if not bucket:
+                keys.remove(key)
+                continue
+            seed = bucket.pop()
+            seen.add(seed.get("seed_id") or id(seed))
+            picked.append(seed)
+            progressed = True
+            if len(picked) >= count:
+                break
+        if not progressed:
+            break
+    return picked
+
+
 def pick_seed_examples(
     seeds: List[Dict[str, Any]],
     row: Dict[str, Any],
@@ -69,11 +123,16 @@ def pick_seed_examples(
     }
     preferred = [
         seed for seed in seeds
-        if str(seed.get("task_type", "")).lower() in skills
-        or str(seed.get("capability", "")).lower() in skills
+        if seed_matches_skills(seed, skills)
     ]
     pool = preferred if len(preferred) >= args.seed_examples_per_video else seeds
-    picked = rng.sample(pool, min(args.seed_examples_per_video, len(pool)))
+    stratify_fields = parse_seed_stratify_fields(args.seed_stratify_fields)
+    picked = stratified_seed_sample(
+        pool,
+        min(args.seed_examples_per_video, len(pool)),
+        stratify_fields,
+        rng,
+    )
     return [
         {
             "seed_id": seed.get("seed_id"),
@@ -83,6 +142,7 @@ def pick_seed_examples(
             "options": seed.get("options"),
             "answer": seed.get("answer"),
             "domain": seed.get("domain"),
+            "sub_category": seed.get("sub_category"),
             "duration": seed.get("duration"),
             "seed_style_notes": seed.get("seed_style_notes"),
         }
@@ -200,6 +260,11 @@ def main() -> None:
     parser.add_argument("--seed-examples", type=Path, default=None)
     parser.add_argument("--seed-examples-per-video", type=int, default=5)
     parser.add_argument("--require-seed-examples", action="store_true")
+    parser.add_argument(
+        "--seed-stratify-fields",
+        default="task_type",
+        help="Comma-separated seed fields for uniform bucket sampling, e.g. task_type or sub_category or task_type,domain.",
+    )
     parser.add_argument("--seed", type=int, default=31)
     parser.add_argument("--include-local-video", action="store_true")
     parser.add_argument(
@@ -282,6 +347,7 @@ def main() -> None:
                     if seed.get("source_benchmark")
                 }
             )
+            normalized["benchmark_seed_stratify_fields"] = parse_seed_stratify_fields(args.seed_stratify_fields)
             append_jsonl(args.output, normalized)
             written += 1
         print(json.dumps({"video_id": row.get("video_id"), "items": min(len(items), args.items_per_video)}, ensure_ascii=False), flush=True)
