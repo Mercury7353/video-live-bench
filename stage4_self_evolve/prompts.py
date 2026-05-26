@@ -188,3 +188,67 @@ Video URL: {url}
 Harness evidence JSON:
 {evidence_json}
 """
+
+
+GEMINI_VIDEO_EVIDENCE_PROMPT = """You are acting as a tool-assisted video evidence harness.
+
+Inspect the provided video carefully and extract evidence that can later support
+nontrivial video benchmark questions. Focus on verifiable evidence, not guesses.
+
+Return JSON only:
+{{
+  "global_summary": {{
+    "one_sentence": "brief video summary",
+    "primary_scene_type": "scene/domain",
+    "visible_language": "language or unknown"
+  }},
+  "timeline_events": [
+    {{
+      "start_sec": 0.0,
+      "end_sec": 1.0,
+      "event": "observable event or state change",
+      "confidence": 0.0
+    }}
+  ],
+  "ocr_evidence": [
+    {{
+      "start_sec": 0.0,
+      "end_sec": 1.0,
+      "text": "visible text",
+      "location": "where it appears",
+      "confidence": 0.0
+    }}
+  ],
+  "audio_evidence": [
+    {{
+      "start_sec": 0.0,
+      "end_sec": 1.0,
+      "text": "spoken content summary or short transcript",
+      "confidence": 0.0
+    }}
+  ],
+  "object_evidence": [
+    {{
+      "start_sec": 0.0,
+      "end_sec": 1.0,
+      "objects": ["salient objects or people"],
+      "attributes": ["colors, counts, roles, states"],
+      "relations": ["spatial or interaction relations"],
+      "confidence": 0.0
+    }}
+  ],
+  "question_opportunities": [
+    {{
+      "skill": "ocr|counting|spatial|temporal|reasoning|tracking|perception",
+      "evidence_spans": [[0.0, 1.0]],
+      "opportunity": "specific nontrivial question opportunity",
+      "verification_signal": "what evidence verifies the answer",
+      "triviality_risk": "risk to avoid"
+    }}
+  ],
+  "harness_notes": ["limitations or uncertain observations"]
+}}
+
+Avoid exact-frame details and tiny visual trivia. Prefer evidence that a harness
+can re-check with OCR, ASR, detection, tracking, or repeated video inspection.
+"""
