@@ -180,6 +180,12 @@ V1 pilot validation:
   parsed accuracy 100%.
 - Local-video sample30 with `gemini-2.5-flash-lite`: 30/30 parsed,
   accuracy 96.7%.
+- YouTube-link direct eval with `gemini-3.5-flash`: 147/150 parsed across
+  three shards.
+- Strict hard-gate filtering with `stage4_self_evolve/strict_filter_candidates.py`:
+  2 accepted, 148 rejected.
+- Main rejection reasons: direct model correct on 145 items, options-only correct
+  on 97 items, missing direct eval on 3 items, one date-style brittle question.
 - `gemini-2.0-flash` is listed by the API but this key receives a 404
   "no longer available to new users" response.
 - OpenAI/GPT validation did not run because `OPENAI_API_KEY` is not configured
@@ -224,3 +230,5 @@ Success criteria:
   and a fixed 150-item candidate set.
 - 2026-05-27: Ran first validation probes; results show weak model separation and
   high options-only leakage, motivating the next evolution round.
+- 2026-05-27: Converted options-only and YouTube direct eval into strict hard
+  gates; only 2/150 V1 candidates survived.
