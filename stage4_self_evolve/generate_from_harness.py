@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from common import DEFAULT_OUTPUT_DIR, GeminiClient, append_jsonl, extract_gemini_text, extract_json, read_jsonl
+from eval_local_video_mcq import get_or_upload, load_upload_cache, request_json
 from prompts import HARNESS_QA_GENERATION_PROMPT
 
 
@@ -88,6 +89,54 @@ def normalize_item(item: Dict[str, Any], source: Dict[str, Any], index: int, arg
     return out
 
 
+def generate_text_only(client: GeminiClient, prompt: str, args: argparse.Namespace) -> Dict[str, Any]:
+    response_text = client.generate(prompt, temperature=args.temperature)
+    return extract_json(extract_gemini_text(response_text))
+
+
+def generate_with_local_video(
+    api_key: str,
+    prompt: str,
+    row: Dict[str, Any],
+    upload_cache: Dict[str, Dict[str, Any]],
+    args: argparse.Namespace,
+) -> Dict[str, Any]:
+    video_path_text = row.get("local_video_path") or row.get("video_path")
+    if not video_path_text:
+        raise ValueError("include-local-video requires local_video_path/video_path")
+    upload = get_or_upload(
+        api_key,
+        Path(video_path_text),
+        args.upload_cache,
+        upload_cache,
+        args.timeout_seconds,
+        args.poll_seconds,
+    )
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{args.model}:generateContent"
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "file_data": {
+                            "mime_type": upload["mime_type"],
+                            "file_uri": upload["file_uri"],
+                        }
+                    },
+                    {"text": prompt},
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": args.temperature,
+            "response_mime_type": "application/json",
+        },
+    }
+    response = request_json(url, api_key=api_key, payload=payload, timeout_seconds=args.timeout_seconds)
+    return extract_json(extract_gemini_text(json.dumps(response)))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
@@ -101,20 +150,27 @@ def main() -> None:
     parser.add_argument("--temperature", type=float, default=0.4)
     parser.add_argument("--sleep-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=300)
+    parser.add_argument("--poll-seconds", type=float, default=5.0)
     parser.add_argument("--max-evidence-chars", type=int, default=24000)
+    parser.add_argument("--include-local-video", action="store_true")
+    parser.add_argument("--upload-cache", type=Path, default=DEFAULT_OUTPUT_DIR / "gemini_file_upload_cache.jsonl")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
     rows = [row for row in read_jsonl(args.input) if row.get("harness_status") == "ok"]
     if args.limit is not None:
         rows = rows[: args.limit]
+    api_keys = load_keys(args)
     client = GeminiClient(
         args.provider,
         args.model,
-        load_keys(args),
+        api_keys,
         sleep_seconds=args.sleep_seconds,
         timeout_seconds=args.timeout_seconds,
     )
+    if args.include_local_video and args.provider != "google":
+        raise ValueError("--include-local-video currently requires --provider google")
+    upload_cache = load_upload_cache(args.upload_cache) if args.include_local_video else {}
     done = done_keys(args.output, args.model) if args.resume else set()
     if not args.resume:
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -133,8 +189,10 @@ def main() -> None:
         )
         prompt += f"\nGenerate up to {args.items_per_video} items for this video."
         try:
-            response_text = client.generate(prompt, temperature=args.temperature)
-            parsed = extract_json(extract_gemini_text(response_text))
+            if args.include_local_video:
+                parsed = generate_with_local_video(api_keys[0], prompt, row, upload_cache, args)
+            else:
+                parsed = generate_text_only(client, prompt, args)
             items = parsed.get("items", [])
         except Exception as exc:
             rejected["generation_error"] = rejected.get("generation_error", 0) + 1

@@ -95,6 +95,8 @@ Actions:
 
 - Added `stage4_self_evolve/generate_from_harness.py`.
 - The generator consumes harness evidence, not Stage2 question text.
+- It can also run with `--include-local-video`, uploading the local video to
+  Gemini so the generator sees both the video and harness evidence.
 - Prompt constraints require aligned video skills, verifiable GT, non-brittle
   question design, plausible same-type distractors, and explicit verification plans.
 - The output schema is compatible with the existing MCQ validation/eval scripts.
@@ -155,3 +157,4 @@ Success criteria:
 - 2026-05-27: Started 120-candidate download run to build an approximately 100-video local pool.
 - 2026-05-27: Added harness evidence and harness-first MCQ generation scripts; smoke-tested metadata-only evidence on two local videos.
 - 2026-05-27: Added parallel download shard support through manifest merge tooling.
+- 2026-05-27: Added local-video upload mode for harness-first Gemini generation.
