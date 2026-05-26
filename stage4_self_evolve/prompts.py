@@ -152,6 +152,10 @@ Allowed question families:
 
 Reject brittle/trivial items:
 - Do not ask exact timestamps, frame numbers, tiny colors/logos, or one-pixel details.
+- Do not ask for exact dates, names, logos, or pop-culture identities unless they are
+  central to the video's stated content and explicitly supported by OCR or audio.
+- Do not require outside-world recognition of a person, celebrity, fictional
+  character, brand, or meme if the video itself does not name it.
 - Do not make options differ only by minor wording or hidden formatting.
 - Do not ask questions answerable from common sense or option wording alone.
 - Do not create an item if the harness evidence does not verify one unique answer.
@@ -249,6 +253,8 @@ Return JSON only:
   "harness_notes": ["limitations or uncertain observations"]
 }}
 
-Avoid exact-frame details and tiny visual trivia. Prefer evidence that a harness
-can re-check with OCR, ASR, detection, tracking, or repeated video inspection.
+Avoid exact-frame details, tiny visual trivia, and external-knowledge labels.
+If a person, character, brand, date, or proper noun is not explicitly named by OCR
+or audio, describe the visible/audio evidence instead of naming it. Prefer evidence
+that a harness can re-check with OCR, ASR, detection, tracking, or repeated video inspection.
 """
