@@ -36,7 +36,7 @@ Actions:
 
 ### Step 2: Build a 100-Video Local Pool
 
-Status: in progress.
+Status: completed.
 
 Actions:
 
@@ -69,6 +69,8 @@ Current run:
   candidates may not yield 100 usable downloads.
 - Started an additional 300-candidate `fusion_all_vides` short-video fast lane
   at 240p/low retry to reach the 100-video target faster.
+- Current valid pool: 106 ffprobe-valid local videos.
+- Valid pool file: `stage4_self_evolve/outputs/v1_valid_video_pool_partial.jsonl`.
 
 ### Step 3: Harness Evidence Packs
 
@@ -77,10 +79,14 @@ Status: in progress.
 Actions:
 
 - Added `stage4_self_evolve/build_video_evidence.py`.
+- Added `stage4_self_evolve/build_gemini_video_evidence.py`.
 - The script converts local video rows into versioned harness evidence packs.
 - It records ffprobe metadata for every local video.
 - It can call VideoAgentDataFlow through `--run-dataflow` to add caption,
   OCR/YOLO/ASR/tracking-derived evidence summaries.
+- Because local OCR/YOLO/ASR dependencies are not installed in this environment,
+  the current executable harness path uses Gemini video inspection to produce
+  structured timeline/OCR/audio/object/question-opportunity evidence.
 - It writes local runtime outputs only; generated evidence JSONL is ignored by git.
 
 Success criteria:
@@ -179,3 +185,4 @@ Success criteria:
 - 2026-05-27: Expanded video acquisition with a 200-candidate stage0 fresh-video pool.
 - 2026-05-27: Added a 300-candidate short-video fast lane from `fusion_all_vides`.
 - 2026-05-27: Added ffprobe-based valid-video-pool export tooling.
+- 2026-05-27: Completed the first 100-video local pool with 106 ffprobe-valid videos.
