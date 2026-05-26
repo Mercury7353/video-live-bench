@@ -135,12 +135,19 @@ Actions:
   benchmark annotations into a seed bank.
 - The local `stage1_gen_q/original_benchmarks/Video-MME.tsv` file now converts
   into 2700 Video-MME seed examples.
+- The broader local/configured registry currently normalizes 25,860 seed
+  examples from Video-MME, LongVideoBench, MLVU, LSDBench, Video-Holmes,
+  LVBench, VSI-Bench, CG-AV-Counting, MME-VideoOCR, Video-MMMU, MMVU, and
+  Charades-STA.
+- Each seed keeps its original benchmark subtype as `source_task_type` /
+  `sub_category` and is mapped into a common `capability` plus
+  `capability_tags` taxonomy.
 - `generate_from_harness.py` now accepts `--seed-examples` and
   `--require-seed-examples`, records `benchmark_seed_ids`, and marks generated
   rows as `benchmark_seed_plus_harness_evidence`.
-- Seed examples are stratified by `task_type` by default; the field can be
-  changed to other Video-MME subtypes such as `sub_category`, `duration`, or
-  composite fields like `task_type,domain`.
+- Seed examples are stratified by `source_benchmark,capability` by default; the
+  field can be changed to other subtype combinations such as
+  `source_benchmark,source_task_type`, `sub_category`, or `capability`.
 - Production V2 runs should use `--include-local-video` so the generator sees the
   original video along with the harness evidence and benchmark seed examples.
 
@@ -270,3 +277,6 @@ Success criteria:
   harness-first Gemini video generation.
 - 2026-05-27: Added stratified seed sampling so Video-MME subtypes do not get
   sampled according to raw row frequency.
+- 2026-05-27: Expanded seed-bank support to the configured multi-benchmark
+  registry and local specialized datasets including LSDBench, LVBench,
+  Video-Holmes, VSI-Bench, CG-AV-Counting, and MME-VideoOCR.

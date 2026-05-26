@@ -61,7 +61,9 @@ def seed_matches_skills(seed: Dict[str, Any], skills: Set[str]) -> bool:
         return False
     texts = [
         str(seed.get("task_type", "")).lower(),
+        str(seed.get("source_task_type", "")).lower(),
         str(seed.get("capability", "")).lower(),
+        " ".join(str(item).lower() for item in seed.get("capability_tags") or []),
         " ".join(str(item).lower() for item in seed.get("seed_style_notes") or []),
     ]
     return any(skill and any(skill in text or text in skill for text in texts) for skill in skills)
@@ -138,6 +140,9 @@ def pick_seed_examples(
             "seed_id": seed.get("seed_id"),
             "source_benchmark": seed.get("source_benchmark"),
             "task_type": seed.get("task_type") or seed.get("capability"),
+            "source_task_type": seed.get("source_task_type"),
+            "capability": seed.get("capability"),
+            "capability_tags": seed.get("capability_tags"),
             "question": seed.get("question"),
             "options": seed.get("options"),
             "answer": seed.get("answer"),
@@ -262,8 +267,8 @@ def main() -> None:
     parser.add_argument("--require-seed-examples", action="store_true")
     parser.add_argument(
         "--seed-stratify-fields",
-        default="task_type",
-        help="Comma-separated seed fields for uniform bucket sampling, e.g. task_type or sub_category or task_type,domain.",
+        default="source_benchmark,capability",
+        help="Comma-separated seed fields for uniform bucket sampling, e.g. source_benchmark,capability or sub_category or source_benchmark,source_task_type.",
     )
     parser.add_argument("--seed", type=int, default=31)
     parser.add_argument("--include-local-video", action="store_true")

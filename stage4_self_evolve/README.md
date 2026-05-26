@@ -184,6 +184,25 @@ python stage4_self_evolve/prepare_benchmark_seeds.py \
   --output stage4_self_evolve/outputs/benchmark_seed_bank_videomme.jsonl
 ```
 
+Prepare a broader seed bank from the configured benchmark registry plus local
+specialized benchmarks:
+
+```bash
+python stage4_self_evolve/prepare_benchmark_seeds.py \
+  --manifest stage1_gen_q/original_benchmarks/dataset_config.json \
+  --input-spec cg_av_counting=stage1_gen_q/original_benchmarks/cg-av-counting.json \
+  --input-spec mme_videoocr=stage1_gen_q/original_benchmarks/mm_videoocr.json \
+  --input-spec vsi_bench=stage1_gen_q/original_benchmarks/vsi_bench.jsonl \
+  --output stage4_self_evolve/outputs/benchmark_seed_bank_multi.jsonl \
+  --summary-output stage4_self_evolve/outputs/benchmark_seed_bank_multi_summary.json
+```
+
+Supported seed schemas include Video-MME, LongVideoBench, MLVU, LSDBench,
+Video-Holmes, LVBench, VSI-Bench, CG-AV-Counting, MME-VideoOCR, Video-MMMU,
+MMVU, and Charades-STA. Each row keeps the original benchmark subtype in
+`source_task_type` / `sub_category` and maps it into a common `capability` plus
+`capability_tags` taxonomy.
+
 Generate with benchmark seeds, harness evidence, and the local video:
 
 ```bash
@@ -195,9 +214,9 @@ python stage4_self_evolve/generate_from_harness.py \
   --model gemini-3.5-flash \
   --run-id v2-seeded \
   --items-per-video 2 \
-  --seed-examples stage4_self_evolve/outputs/benchmark_seed_bank_videomme.jsonl \
+  --seed-examples stage4_self_evolve/outputs/benchmark_seed_bank_multi.jsonl \
   --seed-examples-per-video 5 \
-  --seed-stratify-fields task_type \
+  --seed-stratify-fields source_benchmark,capability \
   --require-seed-examples \
   --include-local-video
 ```
@@ -206,9 +225,10 @@ Rows generated this way record `benchmark_seed_ids` and
 `benchmark_seed_sources`, so later validation can analyze which seed families
 produce hard, valid items.
 
-Seed sampling is stratified by `task_type` by default. Override
-`--seed-stratify-fields` to uniformly sample other Video-MME subtypes, for
-example `sub_category` or `task_type,domain`.
+Seed sampling is stratified by `source_benchmark,capability` by default so one
+large benchmark cannot dominate the prompt examples. Override
+`--seed-stratify-fields` to uniformly sample other subtype combinations, for
+example `source_benchmark,source_task_type`, `sub_category`, or `capability`.
 
 ## API Keys
 
