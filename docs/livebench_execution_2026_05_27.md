@@ -74,7 +74,7 @@ Current run:
 
 ### Step 3: Harness Evidence Packs
 
-Status: in progress.
+Status: completed for V1 pilot.
 
 Actions:
 
@@ -94,6 +94,12 @@ Success criteria:
 - Each processed video has a versioned evidence pack.
 - Evidence is structured enough to support GT and distractor verification.
 
+V1 pilot result:
+
+- Ran Gemini video evidence harness on 75 selected local videos.
+- Evidence success: 74/75.
+- One failure was malformed Gemini JSON and is retryable.
+
 Current smoke test:
 
 - Ran metadata-only evidence generation on the first two available local videos from
@@ -103,7 +109,7 @@ Current smoke test:
 
 ### Step 4: Harness-First Question Generation
 
-Status: in progress.
+Status: completed for V1 pilot.
 
 Actions:
 
@@ -121,6 +127,14 @@ Success criteria:
 
 - Items are evidence-grounded from the start.
 - One video can yield multiple nontrivial aligned items.
+
+V1 pilot result:
+
+- Generated 184 MCQ candidates from 74 evidence packs.
+- Exported a fixed 150-item pilot set.
+- The 150-item set covers 61 videos.
+- Task mix: OCR 55, Reasoning 41, Perception 27, Temporal 22,
+  Counting 4, Tracking 1.
 
 ### Step 5: Verification and Filtering
 
@@ -158,6 +172,26 @@ Current smoke test:
 - Result: 2/2 correct. This validates the mechanics but is not a discrimination
   result; it should be treated as a smoke test only.
 
+V1 pilot validation:
+
+- Options-only leakage probe with `gemini-3.5-flash`: 149/150 parsed,
+  accuracy 65.1%.
+- Local-video sample30 with `gemini-3.5-flash`: 29/30 parsed,
+  parsed accuracy 100%.
+- Local-video sample30 with `gemini-2.5-flash-lite`: 30/30 parsed,
+  accuracy 96.7%.
+- `gemini-2.0-flash` is listed by the API but this key receives a 404
+  "no longer available to new users" response.
+- OpenAI/GPT validation did not run because `OPENAI_API_KEY` is not configured
+  in this environment.
+
+Interpretation:
+
+- The pipeline is mechanically working end to end.
+- The first generated set is too easy for current Gemini video models.
+- The options-only score is too high, so distractor and question leakage filters
+  must be strengthened before treating this as a benchmark release.
+
 ### Step 7: Evolution Loop
 
 Status: pending.
@@ -186,3 +220,7 @@ Success criteria:
 - 2026-05-27: Added a 300-candidate short-video fast lane from `fusion_all_vides`.
 - 2026-05-27: Added ffprobe-based valid-video-pool export tooling.
 - 2026-05-27: Completed the first 100-video local pool with 106 ffprobe-valid videos.
+- 2026-05-27: Completed V1 pilot generation: 74 evidence packs, 184 candidates,
+  and a fixed 150-item candidate set.
+- 2026-05-27: Ran first validation probes; results show weak model separation and
+  high options-only leakage, motivating the next evolution round.
