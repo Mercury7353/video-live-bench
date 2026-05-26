@@ -61,6 +61,10 @@ Current run:
 - These are local runtime artifacts and are intentionally not pushed to GitHub.
 - Added `stage4_self_evolve/merge_video_manifests.py` to merge shard manifests,
   deduplicate by video id, and produce the final annotated local-video pool.
+- Added `stage4_self_evolve/prepare_video_pool.py` to turn stage0 fresh-video
+  JSON exports into download candidate JSONL while excluding already attempted ids.
+- Started an extra 200-candidate stage0 fresh-video pool because the first 120
+  candidates may not yield 100 usable downloads.
 
 ### Step 3: Harness Evidence Packs
 
@@ -168,3 +172,4 @@ Success criteria:
 - 2026-05-27: Added parallel download shard support through manifest merge tooling.
 - 2026-05-27: Added local-video upload mode for harness-first Gemini generation.
 - 2026-05-27: Smoke-tested harness-first generation and local-video evaluation on 1 video / 2 items.
+- 2026-05-27: Expanded video acquisition with a 200-candidate stage0 fresh-video pool.
