@@ -141,6 +141,8 @@ Goal:
 - Generate aligned, nontrivial multiple-choice video questions.
 - The ground truth must be verifiable from the provided harness evidence.
 - A direct bare video model should plausibly fail without using the harness.
+- The item should survive strict gates: an options-only model should not infer the
+  answer, and a strong bare video model should not answer it from one obvious cue.
 
 Allowed question families:
 - OCR: meaningful text/sign/UI in the video, not single-character nitpicks.
@@ -150,18 +152,31 @@ Allowed question families:
 - Action/Event reasoning: what happened, what changed, or why a later state follows.
 - Multi-object tracking: identities or roles across time, when tracking evidence exists.
 
+Prefer hard question designs:
+- aggregate evidence across multiple moments instead of asking for one visible fact;
+- compare earlier and later states of the same object/person;
+- count repeated setup/action/change events over the full video or a long segment;
+- ask about a role/object/action binding that requires tracking who holds or does what;
+- combine two modalities, such as spoken content plus visible action, when both are
+  explicitly evidenced;
+- require temporal ordering among semantically similar events.
+
 Reject brittle/trivial items:
 - Do not ask exact timestamps, frame numbers, tiny colors/logos, or one-pixel details.
 - Do not ask for exact dates, names, logos, or pop-culture identities unless they are
   central to the video's stated content and explicitly supported by OCR or audio.
 - Do not require outside-world recognition of a person, celebrity, fictional
   character, brand, or meme if the video itself does not name it.
+- Do not ask a simple one-shot OCR/subtitle question if the answer is directly
+  readable from a single overlay or caption.
 - Do not make options differ only by minor wording or hidden formatting.
 - Do not ask questions answerable from common sense or option wording alone.
 - Do not create an item if the harness evidence does not verify one unique answer.
 
 For each item, create plausible distractors of the same semantic type as the answer.
 Distractors should be wrong according to the evidence but close enough to test video understanding.
+Avoid default or obviously likely options. If a text-only model could pick the answer
+from option wording, rewrite the options before returning the item.
 
 Return JSON only:
 {{
