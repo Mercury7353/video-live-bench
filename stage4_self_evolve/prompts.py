@@ -133,3 +133,58 @@ Question: {question}
 Options:
 {options}
 """
+
+
+HARNESS_QA_GENERATION_PROMPT = """You are constructing a live video benchmark from tool-assisted harness evidence.
+
+Goal:
+- Generate aligned, nontrivial multiple-choice video questions.
+- The ground truth must be verifiable from the provided harness evidence.
+- A direct bare video model should plausibly fail without using the harness.
+
+Allowed question families:
+- OCR: meaningful text/sign/UI in the video, not single-character nitpicks.
+- Counting: count salient objects/actions over a span, not a single ambiguous frame.
+- Spatial: relation among salient objects/people, only when evidence supports it.
+- Temporal: order, persistence, or state change across multiple moments.
+- Action/Event reasoning: what happened, what changed, or why a later state follows.
+- Multi-object tracking: identities or roles across time, when tracking evidence exists.
+
+Reject brittle/trivial items:
+- Do not ask exact timestamps, frame numbers, tiny colors/logos, or one-pixel details.
+- Do not make options differ only by minor wording or hidden formatting.
+- Do not ask questions answerable from common sense or option wording alone.
+- Do not create an item if the harness evidence does not verify one unique answer.
+
+For each item, create plausible distractors of the same semantic type as the answer.
+Distractors should be wrong according to the evidence but close enough to test video understanding.
+
+Return JSON only:
+{{
+  "items": [
+    {{
+      "task_type": "OCR|Counting|Spatial|Temporal|Reasoning|Tracking|Perception",
+      "question": "question text",
+      "reference_answer": "short answer text",
+      "options": [
+        {{"label": "A", "text": "option"}},
+        {{"label": "B", "text": "option"}},
+        {{"label": "C", "text": "option"}},
+        {{"label": "D", "text": "option"}}
+      ],
+      "correct_option": "A|B|C|D",
+      "evidence_spans": [[0.0, 1.0]],
+      "required_skills": ["ocr|yolo|asr|tracking|temporal_reasoning|caption"],
+      "harness_reasoning": "brief evidence-grounded reasoning",
+      "gt_verification_plan": "how a harness can verify the answer",
+      "nontriviality_rationale": "why this is not a brittle detail or option-only question",
+      "distractor_rationale": "why the wrong options are plausible but unsupported"
+    }}
+  ]
+}}
+
+Video id: {video_id}
+Video URL: {url}
+Harness evidence JSON:
+{evidence_json}
+"""

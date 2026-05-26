@@ -61,28 +61,40 @@ Current run:
 
 ### Step 3: Harness Evidence Packs
 
-Status: pending.
+Status: in progress.
 
 Actions:
 
-- Build evidence packs for local videos using frame/clip extraction first.
-- Add OCR, detection/tracking, and ASR when the local tools are available.
-- Store structured evidence that a generator can cite.
+- Added `stage4_self_evolve/build_video_evidence.py`.
+- The script converts local video rows into versioned harness evidence packs.
+- It records ffprobe metadata for every local video.
+- It can call VideoAgentDataFlow through `--run-dataflow` to add caption,
+  OCR/YOLO/ASR/tracking-derived evidence summaries.
+- It writes local runtime outputs only; generated evidence JSONL is ignored by git.
 
 Success criteria:
 
 - Each processed video has a versioned evidence pack.
 - Evidence is structured enough to support GT and distractor verification.
 
+Current smoke test:
+
+- Ran metadata-only evidence generation on the first two available local videos from
+  the 100-video pool manifest.
+- Output: `stage4_self_evolve/outputs/v1_harness_evidence_smoke.jsonl`.
+- Status: 2/2 metadata-only evidence rows written.
+
 ### Step 4: Harness-First Question Generation
 
-Status: pending.
+Status: in progress.
 
 Actions:
 
-- Use the strongest available Gemini model as generator.
-- Generate multiple questions per video from harness evidence.
-- Generate GT, MCQ options, distractor rationales, and verification plans.
+- Added `stage4_self_evolve/generate_from_harness.py`.
+- The generator consumes harness evidence, not Stage2 question text.
+- Prompt constraints require aligned video skills, verifiable GT, non-brittle
+  question design, plausible same-type distractors, and explicit verification plans.
+- The output schema is compatible with the existing MCQ validation/eval scripts.
 
 Success criteria:
 
@@ -138,3 +150,4 @@ Success criteria:
 - 2026-05-27: Created execution roadmap and set target scale to roughly 100 local videos.
 - 2026-05-27: Pushed a clean code/documentation skeleton to GitHub without data artifacts.
 - 2026-05-27: Started 120-candidate download run to build an approximately 100-video local pool.
+- 2026-05-27: Added harness evidence and harness-first MCQ generation scripts; smoke-tested metadata-only evidence on two local videos.
