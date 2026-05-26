@@ -37,7 +37,7 @@ python stage4_self_evolve/generate_mcq.py \
 ```
 
 The current generator is deterministic and API-free. It builds distractors from
-task sources:
+task-aware sources:
 
 - OCR: local mutations of the visible text, preserving sign-like/display-text form.
 - Counting: nearby but different counts, normalized to count-only option text.
@@ -171,6 +171,39 @@ Default paths:
 - Judged cases: `stage4_self_evolve/outputs/judged_cases.jsonl`
 - Hard cases: `stage4_self_evolve/outputs/hard_cases.jsonl`
 - Summary: `stage4_self_evolve/outputs/summary.json`
+
+## Benchmark Seed Bank
+
+V2 generation should not rely on prompt taxonomy alone. Prepare seed examples
+from existing video benchmarks, then pass them into the harness-first generator:
+
+```bash
+python stage4_self_evolve/prepare_benchmark_seeds.py \
+  --input stage1_gen_q/original_benchmarks/Video-MME.tsv \
+  --schema video_mme \
+  --output stage4_self_evolve/outputs/benchmark_seed_bank_videomme.jsonl
+```
+
+Generate with benchmark seeds, harness evidence, and the local video:
+
+```bash
+python stage4_self_evolve/generate_from_harness.py \
+  --input stage4_self_evolve/outputs/v1_gemini_video_evidence_merged_74.jsonl \
+  --output stage4_self_evolve/outputs/v2_seeded_candidates.jsonl \
+  --api-key-file /path/to/gemini_api_key.txt \
+  --provider google \
+  --model gemini-3.5-flash \
+  --run-id v2-seeded \
+  --items-per-video 2 \
+  --seed-examples stage4_self_evolve/outputs/benchmark_seed_bank_videomme.jsonl \
+  --seed-examples-per-video 5 \
+  --require-seed-examples \
+  --include-local-video
+```
+
+Rows generated this way record `benchmark_seed_ids` and
+`benchmark_seed_sources`, so later validation can analyze which seed families
+produce hard, valid items.
 
 ## API Keys
 

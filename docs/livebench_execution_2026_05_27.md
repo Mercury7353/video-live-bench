@@ -6,6 +6,15 @@ Build the first harness-first pilot at roughly 100 local videos, then generate a
 validate benchmark questions from harness evidence rather than from Stage2 bootstrap
 question text.
 
+Correction after V1:
+
+- V1 did not use real benchmark QA seeds; it only used prompt taxonomy plus harness
+  evidence. That was insufficient and produced many easy or leaky items.
+- V2 generation must use existing benchmark questions, starting with Video-MME, as
+  a seed bank for capability style and evaluation logic.
+- The production generation contract is now: benchmark seed examples + current
+  video input + harness evidence + strongest available generator model.
+
 ## Operating Rules
 
 - Keep a roadmap/status document updated after each completed step.
@@ -109,7 +118,7 @@ Current smoke test:
 
 ### Step 4: Harness-First Question Generation
 
-Status: completed for V1 pilot.
+Status: completed for V1 pilot; revised for V2 seed-bank generation.
 
 Actions:
 
@@ -122,6 +131,15 @@ Actions:
 - Prompt constraints require aligned video skills, verifiable GT, non-brittle
   question design, plausible same-type distractors, and explicit verification plans.
 - The output schema is compatible with the existing MCQ validation/eval scripts.
+- Added `stage4_self_evolve/prepare_benchmark_seeds.py` to normalize existing
+  benchmark annotations into a seed bank.
+- The local `stage1_gen_q/original_benchmarks/Video-MME.tsv` file now converts
+  into 2700 Video-MME seed examples.
+- `generate_from_harness.py` now accepts `--seed-examples` and
+  `--require-seed-examples`, records `benchmark_seed_ids`, and marks generated
+  rows as `benchmark_seed_plus_harness_evidence`.
+- Production V2 runs should use `--include-local-video` so the generator sees the
+  original video along with the harness evidence and benchmark seed examples.
 
 Success criteria:
 
@@ -135,6 +153,18 @@ V1 pilot result:
 - The 150-item set covers 61 videos.
 - Task mix: OCR 55, Reasoning 41, Perception 27, Temporal 22,
   Counting 4, Tracking 1.
+
+V2 seed-bank smoke:
+
+- Built `stage4_self_evolve/outputs/benchmark_seed_bank_videomme.jsonl` locally
+  from Video-MME; this output is not pushed.
+- Ran a 1-video smoke with Video-MME seeds, Gemini video upload, and harness
+  evidence.
+- Result: 1 item generated with `benchmark_seed_sources=["Video-MME"]` and five
+  recorded Video-MME seed ids.
+- The smoke item was still somewhat OCR/counting-detail-like, so seed-bank
+  generation is necessary but not sufficient; strict filtering and rewrite loops
+  remain mandatory before export.
 
 ### Step 5: Verification and Filtering
 
@@ -197,6 +227,7 @@ Interpretation:
 - The first generated set is too easy for current Gemini video models.
 - The options-only score is too high, so distractor and question leakage filters
   must be strengthened before treating this as a benchmark release.
+- V1 should be treated as a failed difficulty pilot, not a benchmark release.
 
 ### Step 7: Evolution Loop
 
@@ -232,3 +263,5 @@ Success criteria:
   high options-only leakage, motivating the next evolution round.
 - 2026-05-27: Converted options-only and YouTube direct eval into strict hard
   gates; only 2/150 V1 candidates survived.
+- 2026-05-27: Added Video-MME seed-bank preparation and wired benchmark seeds into
+  harness-first Gemini video generation.

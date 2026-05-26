@@ -204,6 +204,18 @@ Return JSON only:
 
 Video id: {video_id}
 Video URL: {url}
+
+Benchmark seed examples:
+{seed_examples_json}
+
+Use these existing benchmark seed examples as the primary source of task style:
+- Preserve the seed benchmark's capability target and evaluation logic.
+- Adapt the style to the current video and harness evidence.
+- Do not copy seed entities, answers, or video-specific facts.
+- If a seed is broad or too easy, make the new item require more temporal,
+  multi-object, or multi-evidence reasoning while staying in the same aligned
+  video-understanding family.
+
 Harness evidence JSON:
 {evidence_json}
 """

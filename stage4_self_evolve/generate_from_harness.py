@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import random
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -45,6 +46,50 @@ def compact_evidence(row: Dict[str, Any], max_chars: int) -> str:
     return text[:max_chars] + "\n...TRUNCATED..."
 
 
+def load_seed_examples(path: Optional[Path]) -> List[Dict[str, Any]]:
+    if not path:
+        return []
+    return read_jsonl(path)
+
+
+def pick_seed_examples(
+    seeds: List[Dict[str, Any]],
+    row: Dict[str, Any],
+    args: argparse.Namespace,
+) -> List[Dict[str, Any]]:
+    if not seeds or args.seed_examples_per_video <= 0:
+        return []
+    rng = random.Random(f"{args.seed}:{row.get('video_id')}")
+    evidence = row.get("evidence") or {}
+    opportunities = evidence.get("question_opportunities") or []
+    skills = {
+        str(item.get("skill", "")).lower()
+        for item in opportunities
+        if isinstance(item, dict)
+    }
+    preferred = [
+        seed for seed in seeds
+        if str(seed.get("task_type", "")).lower() in skills
+        or str(seed.get("capability", "")).lower() in skills
+    ]
+    pool = preferred if len(preferred) >= args.seed_examples_per_video else seeds
+    picked = rng.sample(pool, min(args.seed_examples_per_video, len(pool)))
+    return [
+        {
+            "seed_id": seed.get("seed_id"),
+            "source_benchmark": seed.get("source_benchmark"),
+            "task_type": seed.get("task_type") or seed.get("capability"),
+            "question": seed.get("question"),
+            "options": seed.get("options"),
+            "answer": seed.get("answer"),
+            "domain": seed.get("domain"),
+            "duration": seed.get("duration"),
+            "seed_style_notes": seed.get("seed_style_notes"),
+        }
+        for seed in picked
+    ]
+
+
 def validate_item(item: Dict[str, Any]) -> Optional[str]:
     question = str(item.get("question", "")).strip()
     answer = str(item.get("reference_answer", "")).strip()
@@ -79,7 +124,7 @@ def normalize_item(item: Dict[str, Any], source: Dict[str, Any], index: int, arg
     out["local_video_path"] = source.get("local_video_path")
     out["generator_model"] = args.model
     out["generator_provider"] = args.provider
-    out["generation_source"] = "harness_evidence"
+    out["generation_source"] = "benchmark_seed_plus_harness_evidence" if args.seed_examples else "harness_evidence"
     out["harness_status"] = source.get("harness_status")
     out["question_span"] = out.get("evidence_spans") or []
     out["answer_span"] = out.get("evidence_spans") or []
@@ -152,6 +197,10 @@ def main() -> None:
     parser.add_argument("--timeout-seconds", type=int, default=300)
     parser.add_argument("--poll-seconds", type=float, default=5.0)
     parser.add_argument("--max-evidence-chars", type=int, default=24000)
+    parser.add_argument("--seed-examples", type=Path, default=None)
+    parser.add_argument("--seed-examples-per-video", type=int, default=5)
+    parser.add_argument("--require-seed-examples", action="store_true")
+    parser.add_argument("--seed", type=int, default=31)
     parser.add_argument("--include-local-video", action="store_true")
     parser.add_argument(
         "--allow-metadata-only",
@@ -168,6 +217,9 @@ def main() -> None:
     rows = [row for row in read_jsonl(args.input) if row.get("harness_status") in allowed_statuses]
     if args.limit is not None:
         rows = rows[: args.limit]
+    seed_examples = load_seed_examples(args.seed_examples)
+    if args.require_seed_examples and not seed_examples:
+        raise ValueError("--require-seed-examples was set but no seed examples were loaded")
     api_keys = load_keys(args)
     client = GeminiClient(
         args.provider,
@@ -190,9 +242,15 @@ def main() -> None:
         key = f"{row.get('video_id')}::{args.model}"
         if key in done:
             continue
+        selected_seed_examples = pick_seed_examples(seed_examples, row, args)
         prompt = HARNESS_QA_GENERATION_PROMPT.format(
             video_id=row.get("video_id"),
             url=row.get("url"),
+            seed_examples_json=json.dumps(
+                selected_seed_examples,
+                ensure_ascii=False,
+                indent=2,
+            ),
             evidence_json=compact_evidence(row, args.max_evidence_chars),
         )
         prompt += f"\nGenerate up to {args.items_per_video} items for this video."
@@ -211,7 +269,20 @@ def main() -> None:
             if reason:
                 rejected[reason] = rejected.get(reason, 0) + 1
                 continue
-            append_jsonl(args.output, normalize_item(item, row, index, args))
+            normalized = normalize_item(item, row, index, args)
+            normalized["benchmark_seed_ids"] = [
+                seed.get("seed_id")
+                for seed in selected_seed_examples
+                if seed.get("seed_id")
+            ]
+            normalized["benchmark_seed_sources"] = sorted(
+                {
+                    str(seed.get("source_benchmark"))
+                    for seed in selected_seed_examples
+                    if seed.get("source_benchmark")
+                }
+            )
+            append_jsonl(args.output, normalized)
             written += 1
         print(json.dumps({"video_id": row.get("video_id"), "items": min(len(items), args.items_per_video)}, ensure_ascii=False), flush=True)
     print(json.dumps({"input_videos": len(rows), "written": written, "rejected": rejected}, ensure_ascii=False, indent=2))
