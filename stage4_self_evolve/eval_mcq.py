@@ -79,12 +79,18 @@ class OpenAIChatClient:
 
 
 def make_gemini(args: argparse.Namespace) -> GeminiClient:
+    file_keys: List[str] = []
+    if args.api_key_file:
+        text = args.api_key_file.read_text(encoding="utf-8").strip()
+        if text:
+            file_keys = [key.strip() for key in text.split(",") if key.strip()]
     if args.provider == "vectorengine":
         keys = get_env_keys("VECTORENGINE_API_KEY", "VECTORENGINE_API_KEYS")
         if args.use_legacy_vectorengine_keys:
             keys.extend(extract_legacy_vectorengine_keys())
     else:
         keys = get_env_keys("GEMINI_API_KEY", "GOOGLE_API_KEY")
+    keys = file_keys + keys
     return GeminiClient(
         provider=args.provider,
         model=args.model,
@@ -154,6 +160,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=["gemini_video", "gemini_options", "openai_options"], required=True)
     parser.add_argument("--provider", choices=["vectorengine", "google", "openai"], default="vectorengine")
     parser.add_argument("--model", required=True)
+    parser.add_argument("--api-key-file", type=Path, default=None)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--sleep-seconds", type=float, default=0.2)
     parser.add_argument("--timeout-seconds", type=int, default=180)
