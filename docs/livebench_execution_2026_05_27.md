@@ -55,9 +55,12 @@ Current run:
 
 - Selected 120 unique video candidates from `stage4_self_evolve/outputs/v0_150_candidates.jsonl`.
 - Candidate file: `stage4_self_evolve/outputs/v1_100_video_pool_candidates.jsonl`.
-- Download manifest: `stage4_self_evolve/outputs/v1_100_video_pool_download_manifest.jsonl`.
+- Main download manifest: `stage4_self_evolve/outputs/v1_100_video_pool_download_manifest.jsonl`.
+- Parallel shard manifests: `stage4_self_evolve/outputs/v1_100_video_pool_download_manifest_part*.jsonl`.
 - Annotated local-video pool: `stage4_self_evolve/outputs/v1_100_video_pool_local.jsonl`.
 - These are local runtime artifacts and are intentionally not pushed to GitHub.
+- Added `stage4_self_evolve/merge_video_manifests.py` to merge shard manifests,
+  deduplicate by video id, and produce the final annotated local-video pool.
 
 ### Step 3: Harness Evidence Packs
 
@@ -151,3 +154,4 @@ Success criteria:
 - 2026-05-27: Pushed a clean code/documentation skeleton to GitHub without data artifacts.
 - 2026-05-27: Started 120-candidate download run to build an approximately 100-video local pool.
 - 2026-05-27: Added harness evidence and harness-first MCQ generation scripts; smoke-tested metadata-only evidence on two local videos.
+- 2026-05-27: Added parallel download shard support through manifest merge tooling.
