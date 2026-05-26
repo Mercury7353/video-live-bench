@@ -153,11 +153,19 @@ def main() -> None:
     parser.add_argument("--poll-seconds", type=float, default=5.0)
     parser.add_argument("--max-evidence-chars", type=int, default=24000)
     parser.add_argument("--include-local-video", action="store_true")
+    parser.add_argument(
+        "--allow-metadata-only",
+        action="store_true",
+        help="Allow metadata-only evidence rows for smoke tests when local video is also provided.",
+    )
     parser.add_argument("--upload-cache", type=Path, default=DEFAULT_OUTPUT_DIR / "gemini_file_upload_cache.jsonl")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
-    rows = [row for row in read_jsonl(args.input) if row.get("harness_status") == "ok"]
+    allowed_statuses = {"ok"}
+    if args.allow_metadata_only:
+        allowed_statuses.add("metadata_only")
+    rows = [row for row in read_jsonl(args.input) if row.get("harness_status") in allowed_statuses]
     if args.limit is not None:
         rows = rows[: args.limit]
     api_keys = load_keys(args)

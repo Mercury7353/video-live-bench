@@ -97,6 +97,8 @@ Actions:
 - The generator consumes harness evidence, not Stage2 question text.
 - It can also run with `--include-local-video`, uploading the local video to
   Gemini so the generator sees both the video and harness evidence.
+- It has `--allow-metadata-only` for smoke tests; production generation should
+  prefer full harness evidence.
 - Prompt constraints require aligned video skills, verifiable GT, non-brittle
   question design, plausible same-type distractors, and explicit verification plans.
 - The output schema is compatible with the existing MCQ validation/eval scripts.
@@ -122,7 +124,7 @@ Success criteria:
 
 ### Step 6: Multi-Model Validation
 
-Status: pending.
+Status: in progress.
 
 Actions:
 
@@ -134,6 +136,13 @@ Success criteria:
 
 - The benchmark demonstrates discrimination across model versions.
 - Easy/no-signal items are flagged for evolution.
+
+Current smoke test:
+
+- Generated 2 MCQ items from 1 local video with Gemini local-video upload mode.
+- Ran `eval_local_video_mcq.py` on those 2 items with the same Gemini model.
+- Result: 2/2 correct. This validates the mechanics but is not a discrimination
+  result; it should be treated as a smoke test only.
 
 ### Step 7: Evolution Loop
 
@@ -158,3 +167,4 @@ Success criteria:
 - 2026-05-27: Added harness evidence and harness-first MCQ generation scripts; smoke-tested metadata-only evidence on two local videos.
 - 2026-05-27: Added parallel download shard support through manifest merge tooling.
 - 2026-05-27: Added local-video upload mode for harness-first Gemini generation.
+- 2026-05-27: Smoke-tested harness-first generation and local-video evaluation on 1 video / 2 items.
