@@ -30,6 +30,8 @@ stage4_self_evolve/outputs/*raw*
 stage4_self_evolve/outputs/video_cache/
 stage4_self_evolve/outputs/flywheel_*
 stage4_self_evolve/outputs/v0_*
+stage4_self_evolve/outputs/v1_*
+stage4_self_evolve/outputs/video_pool_*
 stage4_self_evolve/outputs/mcq*.jsonl
 stage4_self_evolve/outputs/*reviews*.jsonl
 stage4_self_evolve/outputs/benchmark_*.jsonl

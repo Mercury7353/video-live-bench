@@ -25,17 +25,18 @@ question text.
 
 ### Step 1: Repository and Roadmap Setup
 
-Status: in progress.
+Status: completed.
 
 Actions:
 
-- Add GitHub remote.
-- Add this execution roadmap.
-- Push the initial roadmap commit.
+- Added GitHub remote.
+- Added this execution roadmap.
+- Pushed a clean skeleton branch to GitHub.
+- The pushed branch excludes data, videos, outputs, original benchmark files, and keys.
 
 ### Step 2: Build a 100-Video Local Pool
 
-Status: pending.
+Status: in progress.
 
 Actions:
 
@@ -49,6 +50,14 @@ Success criteria:
 
 - Around 100 local videos are available in `stage4_self_evolve/outputs/video_cache/`.
 - Download failures are explicitly recorded.
+
+Current run:
+
+- Selected 120 unique video candidates from `stage4_self_evolve/outputs/v0_150_candidates.jsonl`.
+- Candidate file: `stage4_self_evolve/outputs/v1_100_video_pool_candidates.jsonl`.
+- Download manifest: `stage4_self_evolve/outputs/v1_100_video_pool_download_manifest.jsonl`.
+- Annotated local-video pool: `stage4_self_evolve/outputs/v1_100_video_pool_local.jsonl`.
+- These are local runtime artifacts and are intentionally not pushed to GitHub.
 
 ### Step 3: Harness Evidence Packs
 
@@ -127,3 +136,5 @@ Success criteria:
 ## Step Log
 
 - 2026-05-27: Created execution roadmap and set target scale to roughly 100 local videos.
+- 2026-05-27: Pushed a clean code/documentation skeleton to GitHub without data artifacts.
+- 2026-05-27: Started 120-candidate download run to build an approximately 100-video local pool.
