@@ -222,9 +222,41 @@ V2 60-video attack pilot:
   used actual model errors such as overcounting Gerald's falls as 6 instead of 5,
   and confusing the animal sequence as "chimpanzee, vulture, and baboon."
 
+V2 74-video full local-video run:
+
+- Reused the existing local videos and Gemini upload cache. No video redownload was
+  needed for this run.
+- Input: 74 Gemini evidence/video rows.
+- GT-only generation wrote 53 candidates covering 44 videos. It rejected 39
+  single-cue/trivial-risk candidates before MCQ construction.
+- Seed examples were sampled from the multi-benchmark seed bank, with coverage from
+  LSDBench, Video-MME, Video-MMMU, MLVU, LVBench, Video-Holmes, LongVideoBench,
+  MMVU, CG-AV-Counting, and Charades-STA.
+- Open-ended direct probing produced a clear model-separation signal:
+  `gemini-2.5-flash-lite` failed 16/53, while `gemini-3.5-flash` failed 3/53.
+- Cross-model tiers:
+  - 14 mid-tier cases: `gemini-2.5-flash-lite` failed and `gemini-3.5-flash`
+    passed.
+  - 2 frontier-overlap cases: both models failed.
+  - 3 Gemini-3.5 frontier-hard cases in total.
+- The 3 Gemini-3.5 frontier-hard cases were converted to MCQ with adversarial
+  distractors mined from real wrong answers. Strict filtering accepted 1/3; the
+  two rejected cases were still answered correctly by direct-video Gemini 3.5 once
+  options were shown.
+- The 14 mid-tier cases were converted to MCQ with adversarial distractors mined
+  from real wrong answers. In MCQ direct-video validation, Gemini 3.5 scored
+  14/14, while Gemini 2.5 Flash-Lite scored 3/14 after one retry for malformed JSON
+  output.
+- Among those 14 mid-tier MCQs, options-only Gemini 3.5 answered 10/14 correctly.
+  Requiring options-only to fail leaves 4/14 leak-free discriminative mid-tier
+  items where Gemini 3.5 is correct and Gemini 2.5 Flash-Lite is wrong.
+- Interpretation: the harness-first GT generation and model-tiering logic now
+  works at small scale. The remaining bottleneck is still distractor leakage:
+  many valid open-ended hard cases become easy when options are visible.
+
 ### Step 5: Verification and Filtering
 
-Status: pending.
+Status: in progress.
 
 Actions:
 
@@ -291,6 +323,9 @@ Interpretation:
   distractor generation. Many GT-hard items become easy once choices are shown.
 - Early adversarial distractor mining confirms that direct-model wrong answers
   are much stronger distractors than free-form generated wrong options.
+- The 74-video full run confirms the same pattern at a larger local-video scale:
+  adversarial distractors produce usable MCQs, but options-only leakage remains
+  the main reason candidates are rejected.
 
 ### Step 7: Evolution Loop
 
@@ -341,3 +376,7 @@ Success criteria:
   for Gemini 3.5 Flash; strict MCQ filtering accepted 1 additional item.
 - 2026-05-27: Added wrong-answer-pool distractor generation and verified on the
   60-video frontier-hard cases that strict MCQ acceptance improved to 2/3.
+- 2026-05-27: Ran the 74-video full local-video generation/validation cycle.
+  It produced 53 GT candidates, 16 Gemini-2.5-lite open-ended failures, 3
+  Gemini-3.5 open-ended failures, 1 strict frontier-hard MCQ, and 4 leak-free
+  discriminative mid-tier MCQs.
