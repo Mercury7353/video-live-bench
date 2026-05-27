@@ -286,6 +286,17 @@ python stage4_self_evolve/fuse_mcq_options.py \
 `fuse_mcq_options.py` is the only stage that assigns A-D labels, using a
 deterministic shuffle of one GT answer plus three generated distractors.
 
+Use GT-stage direct probing to build difficulty tiers:
+
+- `calibration`: direct models answer correctly, useful for sanity checks.
+- `mid-tier`: weaker models fail but frontier models answer correctly, useful for
+  model separation.
+- `frontier-hard`: frontier bare-video models fail, useful for measuring the
+  harness gap and future model evolution.
+
+Do not export a final MCQ just because a GT item is hard. Options-only probing is
+still required because weak distractors can leak the answer.
+
 ## API Keys
 
 New scripts do not store API keys. Use one of:

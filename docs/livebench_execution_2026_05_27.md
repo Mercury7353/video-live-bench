@@ -198,6 +198,22 @@ V2 three-stage pilot:
   visual sequence fully loops; options-only guessed wrong and bare Gemini video
   also answered incorrectly.
 
+V2 60-video attack pilot:
+
+- Generated 47 GT candidates from 60 videos after rejecting 32 single-cue
+  questions and 1 brittle question.
+- GT-stage direct probing showed clear difficulty tiers:
+  `gemini-2.5-flash-lite` failed 21/47, while `gemini-3.5-flash` failed 3/47.
+- This supports a tiered benchmark design rather than a single hard-only set:
+  calibration items, mid-tier model-separating items, and frontier-hard
+  harness-gap items.
+- The 21 `gemini-2.5-flash-lite` hard GT cases were converted into MCQs.
+  Options-only Gemini still answered 17/21 correctly, showing that distractor
+  generation remains the main bottleneck.
+- Among the 4 options-only-hard MCQs, YouTube direct-video Gemini 3.5 failed 1.
+  The strict accepted item asks which hand a comedian consistently uses to hold
+  his microphone throughout a stand-up performance.
+
 ### Step 5: Verification and Filtering
 
 Status: pending.
@@ -263,6 +279,8 @@ Interpretation:
 - V2 three-stage generation solves the option-label/fusion problem but still has
   low hard-case yield. The next scaling run should do GT-stage direct filtering
   before spending calls on distractors.
+- The current main bottleneck is no longer GT generation; it is adversarial
+  distractor generation. Many GT-hard items become easy once choices are shown.
 
 ### Step 7: Evolution Loop
 
@@ -308,3 +326,6 @@ Success criteria:
 - 2026-05-27: Replaced one-shot MCQ generation with a three-stage GT,
   distractor, and fusion pipeline; ran a 30-video attack pilot and obtained
   1 strict accepted item after GT-stage direct filtering.
+- 2026-05-27: Ran a 60-video attack pilot. GT-stage direct probes produced
+  21 mid-tier failures for Gemini 2.5 Flash-Lite and 3 frontier-hard failures
+  for Gemini 3.5 Flash; strict MCQ filtering accepted 1 additional item.
