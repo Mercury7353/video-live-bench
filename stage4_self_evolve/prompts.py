@@ -337,6 +337,88 @@ Do not copy their entities, answers, or options into the new item.
 """
 
 
+MCQ_EVOLUTION_PROMPT = """You are the meta-optimizer for a live video benchmark.
+
+Your job is to repair or drop one multiple-choice video benchmark item using
+validation feedback. The benchmark goal is not arbitrary difficulty; it is
+aligned, nontrivial, verifiable video understanding with useful model separation.
+
+Use these rules:
+- Preserve the verified ground-truth answer unless the evidence shows the item
+  should be dropped. Do not invent a new GT from unsupported evidence.
+- If options-only evaluation got the item correct, remove textual leakage by
+  rewriting distractors into the same semantic type, length, specificity, and
+  uncertainty level as the GT.
+- When repairing options-only leakage, assume the options-only model exploited
+  priors from the question wording plus option plausibility. Make every option
+  share the same obvious cues: same named entities when possible, same count/list
+  length, same ordering format, same specificity, and equally plausible domain
+  priors. Do not leave the GT as the only option that is complete, cautious,
+  conventional, or semantically central.
+- Use "near-miss" distractors: swap order, bind the correct attributes to the
+  wrong entities, alter one extracted value, or mix two real-but-wrong model
+  mistakes. Avoid unrelated alternatives that a text-only model can eliminate.
+- If a direct strong video model got the item correct but the target is
+  frontier-hard, either make the question require a more harness-specific
+  evidence binding or mark it for regeneration.
+- If a weak model got it wrong and a strong model got it right, preserve that
+  useful mid-tier discrimination while reducing options-only leakage.
+- Avoid brittle trivia: exact timestamps, one-pixel details, tiny logo variants,
+  incidental dates, or wording differences where multiple answers would be
+  semantically equivalent.
+- Prefer real wrong model answers as distractor raw material, but discard any
+  wrong-answer candidate that is equivalent to the GT.
+- If the current question makes one option obviously likely without video, rewrite
+  the question wording to be less leading while preserving the same verified GT.
+
+Return JSON only:
+{{
+  "action": "keep|rewrite_distractors|rewrite_question_and_distractors|regenerate_from_video|drop",
+  "revised_question": "question text to use; may be unchanged",
+  "reference_answer": "verified GT answer; usually unchanged",
+  "distractors": [
+    {{
+      "text": "wrong option",
+      "source": "wrong_answer_pool|generated|rewritten",
+      "rationale": "why plausible but wrong and not equivalent to GT",
+      "not_equivalent_to_gt": true
+    }}
+  ],
+  "discarded_equivalent_candidates": ["candidate answer discarded as GT-equivalent"],
+  "skill_plan": ["ocr|yolo|asr|tracking|temporal_reasoning|audio_visual_alignment|caption"],
+  "expected_gate_improvement": "short explanation",
+  "gt_risk": "low|medium|high",
+  "triviality_risk": "low|medium|high",
+  "notes": "brief decision rationale"
+}}
+
+Target mode: {target_mode}
+Task type: {task_type}
+Question: {question}
+Ground-truth answer: {reference_answer}
+Evidence spans: {evidence_spans}
+Harness reasoning: {harness_reasoning}
+GT verification plan: {gt_verification_plan}
+Nontriviality rationale: {nontriviality_rationale}
+
+Current options:
+{options_json}
+Correct option label: {correct_option}
+
+Validation feedback:
+{feedback_json}
+
+Wrong-answer candidates:
+{wrong_answer_candidates_json}
+
+Benchmark seed examples with full questions, options, and answers:
+{seed_examples_json}
+
+Generate exactly {num_distractors} distractors for rewrite actions. For keep/drop/
+regenerate actions, the distractors field may be empty.
+"""
+
+
 GEMINI_VIDEO_EVIDENCE_PROMPT = """You are acting as a tool-assisted video evidence harness.
 
 Inspect the provided video carefully and extract evidence that can later support

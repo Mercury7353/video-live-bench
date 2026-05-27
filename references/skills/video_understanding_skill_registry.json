@@ -1,0 +1,127 @@
+{
+  "registry_version": "2026-05-27",
+  "policy": {
+    "install_policy": "Do not directly install community skills into the benchmark runner. First inspect, sandbox, and reimplement only the needed adapter surface.",
+    "selection_criteria": [
+      "structured evidence output",
+      "local-video support",
+      "timestamp or span grounding",
+      "reproducible CLI or API",
+      "clear license and active maintenance",
+      "low risk of prompt-instruction injection",
+      "usefulness for GT verification or distractor rejection"
+    ]
+  },
+  "skills": [
+    {
+      "id": "local-video-agent-dataflow-video-io",
+      "name": "VideoAgentDataFlow VideoIOManager",
+      "source_type": "local_repo",
+      "source": "/mnt/afs/luhao2/workspace/VideoAgentDataFlow/src/video_captioner/tools/video_io.py",
+      "status": "surveyed",
+      "capabilities": ["metadata", "frame_extraction", "clip_export", "span_grounding"],
+      "benchmark_use": ["extract frames from answer spans", "make OCR/YOLO verification cheaper than full-video inspection"],
+      "integration": "Prefer a thin adapter or the tool API server."
+    },
+    {
+      "id": "local-video-agent-dataflow-paddleocr",
+      "name": "VideoAgentDataFlow PaddleOCRTool",
+      "source_type": "local_repo",
+      "source": "/mnt/afs/luhao2/workspace/VideoAgentDataFlow/src/video_captioner/tools/paddle_ocr.py",
+      "status": "surveyed",
+      "capabilities": ["ocr", "bbox", "confidence", "timestamped_text"],
+      "benchmark_use": ["verify OCR GT", "reject OCR distractors that are actually visible", "mine nearby wrong text as distractors"],
+      "integration": "Use through VIDEO_AGENT_TOOL_API_URL when available."
+    },
+    {
+      "id": "local-video-agent-dataflow-yolo",
+      "name": "VideoAgentDataFlow UltralyticsYOLOTool",
+      "source_type": "local_repo",
+      "source": "/mnt/afs/luhao2/workspace/VideoAgentDataFlow/src/video_captioner/tools/ultralytics_yolo.py",
+      "status": "surveyed",
+      "capabilities": ["object_detection", "tracking", "bbox_relations", "counting_support"],
+      "benchmark_use": ["verify object counts", "verify spatial relations", "mine detected-object distractors"],
+      "integration": "Use as supporting evidence, not sole GT, because generic labels can be coarse."
+    },
+    {
+      "id": "local-video-agent-dataflow-whisper",
+      "name": "VideoAgentDataFlow WhisperASRTool",
+      "source_type": "local_repo",
+      "source": "/mnt/afs/luhao2/workspace/VideoAgentDataFlow/src/video_captioner/tools/whisper_asr.py",
+      "status": "surveyed",
+      "capabilities": ["asr", "transcription", "audio_grounding"],
+      "benchmark_use": ["verify audio-visual questions", "mine spoken distractors", "align spoken claims with visible actions"],
+      "integration": "Optional; prefer the API server to isolate dependencies."
+    },
+    {
+      "id": "clawhub-openclaw-video-understand",
+      "name": "OpenClaw video-understand",
+      "source_type": "clawhub",
+      "source": "https://llmbase.ai/openclaw/video-understand/",
+      "status": "candidate_external",
+      "capabilities": ["video_analysis", "local_video", "youtube", "transcription", "timestamped_qa"],
+      "benchmark_use": ["candidate source for agentic video QA patterns", "possible baseline harness skill"],
+      "integration": "Do not install directly; inspect SKILL.md and reimplement a minimal safe adapter."
+    },
+    {
+      "id": "clawhub-image-vision",
+      "name": "ClawHub Image Vision",
+      "source_type": "clawhub",
+      "source": "https://clawhub.ai/skills/image-vision",
+      "status": "candidate_external",
+      "capabilities": ["image_qa", "ocr", "visual_inspection"],
+      "benchmark_use": ["frame-level OCR/visual sanity check", "fallback for extracted frames"],
+      "integration": "Frame-only helper; not enough for long temporal video by itself."
+    },
+    {
+      "id": "clawhub-asr-claw",
+      "name": "asr-claw",
+      "source_type": "clawhub",
+      "source": "https://clawhub.ai/dionren/asr-claw",
+      "status": "candidate_external",
+      "capabilities": ["asr", "audio_transcription"],
+      "benchmark_use": ["audio transcript evidence", "spoken-answer verification"],
+      "integration": "Candidate for ASR-only path after security review."
+    },
+    {
+      "id": "clawhub-wayinvideo-video-understanding",
+      "name": "WayinVideo video understanding and clipping",
+      "source_type": "clawhub",
+      "source": "https://wayin.ai/api-docs/skills-video-understanding-and-ai-clipping/",
+      "status": "candidate_external",
+      "capabilities": ["video_summary", "find_moments", "transcription", "clipping"],
+      "benchmark_use": ["moment retrieval harness", "long-video evidence narrowing"],
+      "integration": "Requires hosted API review and cost/latency profiling."
+    },
+    {
+      "id": "agentskill-gemini-video-understanding",
+      "name": "Gemini video understanding skill",
+      "source_type": "agent_skill_marketplace",
+      "source": "https://eliteai.tools/agent-skills/gemini-video-understanding",
+      "status": "candidate_external",
+      "capabilities": ["gemini_video", "youtube", "timeline_detection", "timestamp_query", "transcription"],
+      "benchmark_use": ["reference implementation for Gemini-based video harnessing"],
+      "integration": "We already have a local Gemini evidence harness; use this mainly for prompt/API ideas."
+    },
+    {
+      "id": "github-video-rag",
+      "name": "Video-RAG",
+      "source_type": "github_project",
+      "source": "https://www.sourcepulse.org/projects/1839443",
+      "status": "candidate_external",
+      "capabilities": ["video_rag", "ocr", "asr", "object_detection", "retrieval"],
+      "benchmark_use": ["long-video retrieval and evidence packing", "multi-signal harness evolution"],
+      "integration": "Evaluate repo/license before adoption."
+    },
+    {
+      "id": "github-viqagent",
+      "name": "ViQAgent",
+      "source_type": "paper_code",
+      "source": "https://arxiv.org/abs/2505.15928",
+      "status": "candidate_external",
+      "capabilities": ["video_qa_agent", "open_vocabulary_grounding", "yolo_world", "tracking_validation"],
+      "benchmark_use": ["grounding validation harness", "object-centric hard question design"],
+      "integration": "Review code and dependencies before adapter work."
+    }
+  ]
+}

@@ -254,6 +254,40 @@ V2 74-video full local-video run:
   works at small scale. The remaining bottleneck is still distractor leakage:
   many valid open-ended hard cases become easy when options are visible.
 
+V2 evo03 strategy run:
+
+- Added a feedback-driven MCQ evolution step that reads options-only/direct-video
+  validation failures and asks Gemini to propose repairs to questions and
+  distractors.
+- Two repair rounds on the previous mid-tier MCQs showed low yield: evo01/evo02
+  only produced 2 additional options-only-hard candidates, and both became easy
+  for Gemini 2.5 Flash-Lite once video was shown. This means late option repair
+  is not the main path.
+- Added a generation-strategy optimizer. Gemini summarized the full74 failures
+  and proposed `evo03_prior_disruption`: generate questions around counter-prior
+  video facts, non-default temporal/order patterns, visual-verbal discrepancies,
+  and tightly constrained counts.
+- Wired that strategy into GT generation with `--strategy-file` and reran the
+  same 74-video pool. The run produced 53 GT candidates again, but single-cue
+  rejections dropped from 39 to 23.
+- Open-ended difficulty improved sharply:
+  - Previous full74: Gemini 3.5 failed 3/53; Gemini 2.5 Flash-Lite failed 16/53.
+  - Evo03: Gemini 3.5 failed 13/52 judged; Gemini 2.5 Flash-Lite failed 33/50
+    judged.
+- Cross-model tiering on the common judged subset produced 21 mid-tier cases
+  and 12 Gemini-3.5 hard cases, compared with 14 and 3 in the previous full74 run.
+- After adversarial distractor generation and options-only filtering, evo03
+  produced:
+  - 4 strict Gemini-3.5 hard MCQs;
+  - 1 mid-tier discriminative MCQ where Gemini 3.5 is correct and Gemini 2.5
+    Flash-Lite is wrong;
+  - 2 calibration MCQs where both video models are correct but options-only fails.
+- A Gemini MCQ semantic review kept all 7 candidate MCQs.
+- Interpretation: moving evolution upstream into GT/question strategy is much
+  more effective than only repairing distractors after the fact. The next loop
+  should run evo03-style generation on more than 100 videos and combine it with
+  stronger tool evidence for OCR/tracking/audio-visual verification.
+
 ### Step 5: Verification and Filtering
 
 Status: in progress.
@@ -326,6 +360,9 @@ Interpretation:
 - The 74-video full run confirms the same pattern at a larger local-video scale:
   adversarial distractors produce usable MCQs, but options-only leakage remains
   the main reason candidates are rejected.
+- The evo03 run shows the first clear self-evolution signal: model-written
+  strategy from failed cases increased open-ended hard-case yield and produced
+  new strict MCQs without changing the video pool.
 
 ### Step 7: Evolution Loop
 
@@ -380,3 +417,7 @@ Success criteria:
   It produced 53 GT candidates, 16 Gemini-2.5-lite open-ended failures, 3
   Gemini-3.5 open-ended failures, 1 strict frontier-hard MCQ, and 4 leak-free
   discriminative mid-tier MCQs.
+- 2026-05-27: Added feedback-driven MCQ evolution, video skill registry, skill
+  discovery tooling, generation-strategy proposal, and strategy-conditioned GT
+  generation. Ran evo03 on the same 74 videos and obtained 4 strict hard MCQs,
+  1 mid-tier discriminative MCQ, and 2 calibration MCQs after semantic review.

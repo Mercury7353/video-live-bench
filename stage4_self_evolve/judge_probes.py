@@ -102,14 +102,23 @@ def main() -> None:
     parser.add_argument("--use-legacy-vectorengine-keys", action="store_true")
     parser.add_argument("--heuristic-only", action="store_true")
     parser.add_argument("--confidence-threshold", type=float, default=0.45)
+    parser.add_argument("--continue-on-error", action="store_true")
     args = parser.parse_args()
 
     rows = read_jsonl(args.input)
     client = make_client(args)
     judged = []
     hard_cases = []
+    errors = []
     for row in rows:
-        judgement = judge_one(client, row, args)
+        try:
+            judgement = judge_one(client, row, args)
+        except Exception as exc:
+            if not args.continue_on_error:
+                raise
+            errors.append({"candidate_id": row.get("candidate_id"), "error": str(exc)})
+            print(json.dumps({"candidate_id": row.get("candidate_id"), "error": str(exc)}, ensure_ascii=False), flush=True)
+            continue
         merged = dict(row)
         merged.update(
             {
@@ -140,7 +149,7 @@ def main() -> None:
 
     write_jsonl(args.output, judged)
     write_jsonl(args.hard_output, hard_cases)
-    print(json.dumps({"judged": len(judged), "hard_cases": len(hard_cases)}, ensure_ascii=False, indent=2))
+    print(json.dumps({"judged": len(judged), "hard_cases": len(hard_cases), "errors": errors}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

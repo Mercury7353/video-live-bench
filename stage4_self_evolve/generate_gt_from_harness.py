@@ -17,6 +17,22 @@ from generate_from_harness import (
 from prompts import HARNESS_GT_GENERATION_PROMPT
 
 
+def load_strategy_addendum(path: Optional[Path]) -> str:
+    if not path:
+        return ""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    parts = []
+    for key in ["prompt_addendum", "target_question_patterns", "avoid_question_patterns", "distractor_lessons"]:
+        value = data.get(key)
+        if not value:
+            continue
+        if isinstance(value, list):
+            parts.append(f"{key}:\n" + "\n".join(f"- {item}" for item in value))
+        else:
+            parts.append(f"{key}:\n{value}")
+    return "\n\n".join(parts).strip()
+
+
 def validate_gt_item(item: Dict[str, Any]) -> Optional[str]:
     question = str(item.get("question", "")).strip()
     answer = str(item.get("reference_answer", "")).strip()
@@ -115,6 +131,7 @@ def main() -> None:
     parser.add_argument("--reject-single-cue-questions", action="store_true")
     parser.add_argument("--include-local-video", action="store_true")
     parser.add_argument("--upload-cache", type=Path, default=DEFAULT_OUTPUT_DIR / "gemini_file_upload_cache.jsonl")
+    parser.add_argument("--strategy-file", type=Path, default=None)
     args = parser.parse_args()
 
     rows = [row for row in read_jsonl(args.input) if row.get("harness_status") == "ok"]
@@ -134,6 +151,7 @@ def main() -> None:
     if args.include_local_video and args.provider != "google":
         raise ValueError("--include-local-video currently requires --provider google")
     upload_cache = load_upload_cache(args.upload_cache) if args.include_local_video else {}
+    strategy_addendum = load_strategy_addendum(args.strategy_file)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("", encoding="utf-8")
 
@@ -147,6 +165,8 @@ def main() -> None:
             seed_examples_json=json.dumps(selected_seed_examples, ensure_ascii=False, indent=2),
             evidence_json=compact_evidence(row, args.max_evidence_chars),
         )
+        if strategy_addendum:
+            prompt += "\n\nEvolution strategy from previous validation failures:\n" + strategy_addendum
         prompt += f"\nGenerate up to {args.items_per_video} GT QA items for this video."
         try:
             if args.include_local_video:
