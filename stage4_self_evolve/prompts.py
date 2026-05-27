@@ -221,6 +221,101 @@ Harness evidence JSON:
 """
 
 
+HARNESS_GT_GENERATION_PROMPT = """You are constructing the GT stage of a live video benchmark.
+
+Generate aligned, nontrivial video questions and verified ground-truth answers.
+Do not generate multiple-choice options or distractors in this stage.
+
+The question must:
+- follow the capability style of the benchmark seed examples;
+- be adapted to the current video and harness evidence;
+- have one unique answer supported by the evidence;
+- avoid brittle details such as exact timestamps, frame numbers, one-pixel details,
+  incidental dates, or tiny logo/text differences unless they are central;
+- prefer temporal, multi-object, multi-moment, audio-visual, or spatial reasoning
+  over one-shot OCR or a single obvious visual cue.
+- be hard for a strong bare video model: avoid questions answerable by inspecting
+  one obvious moment, a single visible text line, or one salient object.
+- prefer comparisons between earlier and later states, aggregation over a segment,
+  or binding between audio and visual actions when the evidence supports them.
+- do not mention exact timestamps or "around MM:SS" in the question. The model
+  being evaluated should not be told where to look.
+
+Avoid designs that recent bare Gemini already answered correctly:
+- counting clearly displayed icons, flowers, or salient objects in one scene;
+- comparing two explicitly displayed prices or labels;
+- asking which of two named places appeared first;
+- asking which named museum/place/object matches a single spoken description;
+- pairing two obvious OCR strings from two scenes when both are visually salient.
+
+Prefer failure-seeking designs:
+- aggregate multiple repeated events across most of the video;
+- ask for a discrepancy between what is shown, spoken, and later acted upon;
+- require tracking the same object/person/role through several visually similar moments;
+- require ordering four or more semantically similar events without revealing where they occur;
+- require a small calculation after extracting values from separated modalities or scenes;
+- ask what changed between two non-adjacent states when both states must be located.
+
+Return JSON only:
+{{
+  "items": [
+    {{
+      "task_type": "OCR|Counting|Spatial|Temporal|Reasoning|Tracking|Perception|AudioVisual|LongContext",
+      "question": "question text",
+      "reference_answer": "short answer text",
+      "evidence_spans": [[0.0, 1.0]],
+      "required_skills": ["ocr|yolo|asr|tracking|temporal_reasoning|caption|audio_visual_alignment"],
+      "harness_reasoning": "brief evidence-grounded reasoning",
+      "gt_verification_plan": "how a harness can verify the answer",
+      "nontriviality_rationale": "why this is not a brittle detail or option-only question"
+    }}
+  ]
+}}
+
+Video id: {video_id}
+Video URL: {url}
+
+Benchmark seed examples:
+{seed_examples_json}
+
+Harness evidence JSON:
+{evidence_json}
+"""
+
+
+DISTRACTOR_GENERATION_PROMPT = """You are constructing distractors for one verified video benchmark QA.
+
+Generate exactly {num_distractors} wrong answer candidates. Do not include the
+ground-truth answer. Distractors must be:
+- same semantic type and granularity as the GT answer;
+- plausible for someone who partially understood the video;
+- contradicted or unsupported by the harness evidence;
+- not obviously silly, generic, or length/wording giveaways;
+- mutually distinct.
+
+Return JSON only:
+{{
+  "distractors": [
+    {{"text": "wrong option", "rationale": "why plausible but wrong"}}
+  ],
+  "distractor_rationale": "brief overall rationale"
+}}
+
+Task type: {task_type}
+Question: {question}
+Ground-truth answer: {reference_answer}
+Evidence spans: {evidence_spans}
+Harness reasoning: {harness_reasoning}
+GT verification plan: {gt_verification_plan}
+
+Benchmark seed examples with full questions, options, and answers:
+{seed_examples_json}
+
+Use these complete seed MCQs to imitate distractor style and option granularity.
+Do not copy their entities, answers, or options into the new item.
+"""
+
+
 GEMINI_VIDEO_EVIDENCE_PROMPT = """You are acting as a tool-assisted video evidence harness.
 
 Inspect the provided video carefully and extract evidence that can later support

@@ -27,12 +27,18 @@ def bool_value(value: Any, default: bool = False) -> bool:
 def make_client(args: argparse.Namespace) -> Optional[GeminiClient]:
     if args.heuristic_only:
         return None
+    file_keys: List[str] = []
+    if args.api_key_file:
+        text = args.api_key_file.read_text(encoding="utf-8").strip()
+        if text:
+            file_keys = [key.strip() for key in text.split(",") if key.strip()]
     if args.provider == "vectorengine":
         keys = get_env_keys("VECTORENGINE_API_KEY", "VECTORENGINE_API_KEYS")
         if args.use_legacy_vectorengine_keys:
             keys.extend(extract_legacy_vectorengine_keys())
     else:
         keys = get_env_keys("GEMINI_API_KEY", "GOOGLE_API_KEY")
+    keys = file_keys + keys
     return GeminiClient(
         provider=args.provider,
         model=args.model,
@@ -90,6 +96,7 @@ def main() -> None:
     parser.add_argument("--hard-output", type=Path, default=DEFAULT_OUTPUT_DIR / "hard_cases.jsonl")
     parser.add_argument("--provider", choices=["vectorengine", "google"], default="vectorengine")
     parser.add_argument("--model", default="gemini-3-flash-preview")
+    parser.add_argument("--api-key-file", type=Path, default=None)
     parser.add_argument("--sleep-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=120)
     parser.add_argument("--use-legacy-vectorengine-keys", action="store_true")

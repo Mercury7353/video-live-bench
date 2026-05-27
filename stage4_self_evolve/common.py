@@ -112,7 +112,15 @@ def extract_json(text: str) -> Dict[str, Any]:
     end = clean.rfind("}")
     if start >= 0 and end > start:
         clean = clean[start : end + 1]
-    return json.loads(clean)
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError:
+        decoder = json.JSONDecoder()
+        if start >= 0:
+            obj, _ = decoder.raw_decode(clean)
+            if isinstance(obj, dict):
+                return obj
+        raise
 
 
 def extract_gemini_text(response_text: str) -> str:

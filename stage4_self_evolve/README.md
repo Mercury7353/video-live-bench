@@ -230,6 +230,62 @@ large benchmark cannot dominate the prompt examples. Override
 `--seed-stratify-fields` to uniformly sample other subtype combinations, for
 example `source_benchmark,source_task_type`, `sub_category`, or `capability`.
 
+## Three-Stage MCQ Pipeline
+
+Production generation should not ask the model to produce the full MCQ in one
+shot. Use three stages:
+
+```bash
+python stage4_self_evolve/generate_gt_from_harness.py \
+  --input stage4_self_evolve/outputs/v1_gemini_video_evidence_merged_74.jsonl \
+  --output stage4_self_evolve/outputs/v2_gt.jsonl \
+  --api-key-file /path/to/gemini_api_key.txt \
+  --provider google \
+  --model gemini-3.5-flash \
+  --seed-examples stage4_self_evolve/outputs/benchmark_seed_bank_multi.jsonl \
+  --require-seed-examples \
+  --reject-single-cue-questions \
+  --include-local-video
+```
+
+Probe GT candidates before generating distractors:
+
+```bash
+python stage4_self_evolve/direct_probe.py \
+  --input stage4_self_evolve/outputs/v2_gt.jsonl \
+  --output stage4_self_evolve/outputs/v2_gt_direct.jsonl \
+  --provider google \
+  --model gemini-3.5-flash \
+  --api-key-file /path/to/gemini_api_key.txt
+
+python stage4_self_evolve/judge_probes.py \
+  --input stage4_self_evolve/outputs/v2_gt_direct.jsonl \
+  --hard-output stage4_self_evolve/outputs/v2_gt_hard.jsonl \
+  --provider google \
+  --model gemini-3.5-flash \
+  --api-key-file /path/to/gemini_api_key.txt
+```
+
+Then generate distractors and fuse options only for GT-stage hard cases:
+
+```bash
+python stage4_self_evolve/generate_distractors.py \
+  --input stage4_self_evolve/outputs/v2_gt_hard.jsonl \
+  --output stage4_self_evolve/outputs/v2_distractors.jsonl \
+  --api-key-file /path/to/gemini_api_key.txt \
+  --provider google \
+  --model gemini-3.5-flash \
+  --seed-examples stage4_self_evolve/outputs/benchmark_seed_bank_multi.jsonl \
+  --require-seed-examples
+
+python stage4_self_evolve/fuse_mcq_options.py \
+  --input stage4_self_evolve/outputs/v2_distractors.jsonl \
+  --output stage4_self_evolve/outputs/v2_mcq.jsonl
+```
+
+`fuse_mcq_options.py` is the only stage that assigns A-D labels, using a
+deterministic shuffle of one GT answer plus three generated distractors.
+
 ## API Keys
 
 New scripts do not store API keys. Use one of:

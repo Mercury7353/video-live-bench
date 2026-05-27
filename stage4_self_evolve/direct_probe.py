@@ -21,6 +21,11 @@ def existing_ids(path: Path) -> Set[str]:
 
 
 def make_client(args: argparse.Namespace) -> GeminiClient:
+    file_keys: List[str] = []
+    if args.api_key_file:
+        text = args.api_key_file.read_text(encoding="utf-8").strip()
+        if text:
+            file_keys = [key.strip() for key in text.split(",") if key.strip()]
     keys: List[str]
     if args.provider == "vectorengine":
         keys = get_env_keys("VECTORENGINE_API_KEY", "VECTORENGINE_API_KEYS")
@@ -28,6 +33,7 @@ def make_client(args: argparse.Namespace) -> GeminiClient:
             keys.extend(extract_legacy_vectorengine_keys())
     else:
         keys = get_env_keys("GEMINI_API_KEY", "GOOGLE_API_KEY")
+    keys = file_keys + keys
     return GeminiClient(
         provider=args.provider,
         model=args.model,
@@ -47,15 +53,19 @@ def probe_one(client: GeminiClient, candidate: Dict[str, Any], args: argparse.Na
     )
     model_text = extract_gemini_text(response_text)
     parsed = extract_json(model_text)
-    return {
+    out = {
         "candidate_id": candidate["candidate_id"],
         "video_id": candidate["video_id"],
         "url": candidate["url"],
+        "local_video_path": candidate.get("local_video_path"),
         "task_type": candidate["task_type"],
         "question": candidate["question"],
         "reference_answer": candidate["reference_answer"],
         "answer_span": candidate["answer_span"],
+        "evidence_spans": candidate.get("evidence_spans") or candidate.get("answer_span"),
         "harness_reasoning": candidate["harness_reasoning"],
+        "gt_verification_plan": candidate.get("gt_verification_plan", ""),
+        "nontriviality_rationale": candidate.get("nontriviality_rationale", ""),
         "direct_model": args.model,
         "direct_provider": args.provider,
         "direct_answer": parsed.get("answer", ""),
@@ -63,6 +73,20 @@ def probe_one(client: GeminiClient, candidate: Dict[str, Any], args: argparse.Na
         "direct_reasoning_brief": parsed.get("reasoning_brief", ""),
         "raw_response_text": response_text if args.keep_raw_response else None,
     }
+    for key in [
+        "generation_stage",
+        "generation_source",
+        "generator_model",
+        "generator_provider",
+        "benchmark_seed_ids",
+        "benchmark_seed_sources",
+        "benchmark_seed_capabilities",
+        "benchmark_seed_examples",
+        "benchmark_seed_stratify_fields",
+    ]:
+        if key in candidate:
+            out[key] = candidate[key]
+    return out
 
 
 def main() -> None:
@@ -72,6 +96,7 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--provider", choices=["vectorengine", "google"], default="vectorengine")
     parser.add_argument("--model", default="gemini-3-flash-preview")
+    parser.add_argument("--api-key-file", type=Path, default=None)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--sleep-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=180)

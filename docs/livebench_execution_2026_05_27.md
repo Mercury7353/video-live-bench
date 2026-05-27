@@ -150,6 +150,12 @@ Actions:
   `source_benchmark,source_task_type`, `sub_category`, or `capability`.
 - Production V2 runs should use `--include-local-video` so the generator sees the
   original video along with the harness evidence and benchmark seed examples.
+- The V2 MCQ pipeline is now split into three stages:
+  `generate_gt_from_harness.py` creates only question + verified GT,
+  `generate_distractors.py` creates only wrong options, and
+  `fuse_mcq_options.py` deterministically shuffles GT + distractors into A-D.
+  This removes the one-shot MCQ bias where the model often placed the correct
+  answer in option A.
 
 Success criteria:
 
@@ -175,6 +181,22 @@ V2 seed-bank smoke:
 - The smoke item was still somewhat OCR/counting-detail-like, so seed-bank
   generation is necessary but not sufficient; strict filtering and rewrite loops
   remain mandatory before export.
+
+V2 three-stage pilot:
+
+- One-shot MCQ generation was abandoned because it produced strong correct-label
+  bias and weak distractor control.
+- Three-stage generation fixed option fusion mechanically: GT is generated first,
+  distractors are generated separately with complete benchmark seed MCQ examples,
+  and labels are assigned only by code.
+- A 30-video attack pilot produced 25 GT candidates after rejecting 16 single-cue
+  questions and 1 brittle question.
+- GT-stage bare Gemini direct probing found 3/25 direct-failure candidates.
+- After distractor generation, MCQ fusion, options-only probing, and YouTube
+  direct-video evaluation, 1/3 direct-failure candidates survived the strict gate.
+- The accepted pilot item asks how many times a dancing-club-crowd background
+  visual sequence fully loops; options-only guessed wrong and bare Gemini video
+  also answered incorrectly.
 
 ### Step 5: Verification and Filtering
 
@@ -238,6 +260,9 @@ Interpretation:
 - The options-only score is too high, so distractor and question leakage filters
   must be strengthened before treating this as a benchmark release.
 - V1 should be treated as a failed difficulty pilot, not a benchmark release.
+- V2 three-stage generation solves the option-label/fusion problem but still has
+  low hard-case yield. The next scaling run should do GT-stage direct filtering
+  before spending calls on distractors.
 
 ### Step 7: Evolution Loop
 
@@ -280,3 +305,6 @@ Success criteria:
 - 2026-05-27: Expanded seed-bank support to the configured multi-benchmark
   registry and local specialized datasets including LSDBench, LVBench,
   Video-Holmes, VSI-Bench, CG-AV-Counting, and MME-VideoOCR.
+- 2026-05-27: Replaced one-shot MCQ generation with a three-stage GT,
+  distractor, and fusion pipeline; ran a 30-video attack pilot and obtained
+  1 strict accepted item after GT-stage direct filtering.
