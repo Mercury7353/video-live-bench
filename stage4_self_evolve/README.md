@@ -272,6 +272,7 @@ Then generate distractors and fuse options only for GT-stage hard cases:
 python stage4_self_evolve/generate_distractors.py \
   --input stage4_self_evolve/outputs/v2_gt_hard.jsonl \
   --output stage4_self_evolve/outputs/v2_distractors.jsonl \
+  --wrong-answer-file stage4_self_evolve/outputs/v2_gt_direct_judged.jsonl \
   --api-key-file /path/to/gemini_api_key.txt \
   --provider google \
   --model gemini-3.5-flash \
@@ -285,6 +286,12 @@ python stage4_self_evolve/fuse_mcq_options.py \
 
 `fuse_mcq_options.py` is the only stage that assigns A-D labels, using a
 deterministic shuffle of one GT answer plus three generated distractors.
+
+Prefer adversarial distractors from actual model mistakes. `--wrong-answer-file`
+can point to direct-probe or judged-case JSONL files; the distractor generator
+uses those wrong open-ended answers as the first candidate pool, removes answers
+that are merely paraphrases of the GT, and rewrites the final options into one
+consistent style.
 
 Use GT-stage direct probing to build difficulty tiers:
 

@@ -285,19 +285,37 @@ Harness evidence JSON:
 
 DISTRACTOR_GENERATION_PROMPT = """You are constructing distractors for one verified video benchmark QA.
 
-Generate exactly {num_distractors} wrong answer candidates. Do not include the
-ground-truth answer. Distractors must be:
+Generate exactly {num_distractors} final wrong answer options. Do not include the
+ground-truth answer or any semantically equivalent paraphrase of it.
+
+Use the wrong-answer candidate pool first. These candidates came from models
+answering the question directly, repeated stochastic samples, or text-only probes.
+Some candidates may be equivalent to the GT because of wording differences; remove
+those before constructing distractors.
+
+Distractors must be:
 - same semantic type and granularity as the GT answer;
 - plausible for someone who partially understood the video;
 - contradicted or unsupported by the harness evidence;
 - not obviously silly, generic, or length/wording giveaways;
 - mutually distinct.
 
+Rewrite the final options so they look like they belong to the same option set:
+- similar length and specificity;
+- same format for lists, counts, ordered sequences, names, or measurements;
+- no option should be more hedged, verbose, or obviously safer than the others.
+
 Return JSON only:
 {{
   "distractors": [
-    {{"text": "wrong option", "rationale": "why plausible but wrong"}}
+    {{
+      "text": "wrong option",
+      "source": "wrong_answer_pool|generated",
+      "rationale": "why plausible but wrong",
+      "not_equivalent_to_gt": true
+    }}
   ],
+  "discarded_equivalent_candidates": ["candidate that was equivalent to GT"],
   "distractor_rationale": "brief overall rationale"
 }}
 
@@ -307,6 +325,9 @@ Ground-truth answer: {reference_answer}
 Evidence spans: {evidence_spans}
 Harness reasoning: {harness_reasoning}
 GT verification plan: {gt_verification_plan}
+
+Wrong-answer candidate pool:
+{wrong_answer_candidates_json}
 
 Benchmark seed examples with full questions, options, and answers:
 {seed_examples_json}

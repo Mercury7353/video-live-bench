@@ -17,7 +17,10 @@ from prompts import DIRECT_PROBE_PROMPT
 
 
 def existing_ids(path: Path) -> Set[str]:
-    return {row.get("candidate_id", "") for row in read_jsonl(path)}
+    return {
+        f"{row.get('candidate_id', '')}::{row.get('direct_model', '')}::{row.get('sample_index', 0)}"
+        for row in read_jsonl(path)
+    }
 
 
 def make_client(args: argparse.Namespace) -> GeminiClient:
@@ -43,7 +46,7 @@ def make_client(args: argparse.Namespace) -> GeminiClient:
     )
 
 
-def probe_one(client: GeminiClient, candidate: Dict[str, Any], args: argparse.Namespace) -> Dict[str, Any]:
+def probe_one(client: GeminiClient, candidate: Dict[str, Any], args: argparse.Namespace, sample_index: int) -> Dict[str, Any]:
     prompt = DIRECT_PROBE_PROMPT.format(question=candidate["question"])
     response_text = client.generate(
         prompt,
@@ -68,6 +71,7 @@ def probe_one(client: GeminiClient, candidate: Dict[str, Any], args: argparse.Na
         "nontriviality_rationale": candidate.get("nontriviality_rationale", ""),
         "direct_model": args.model,
         "direct_provider": args.provider,
+        "sample_index": sample_index,
         "direct_answer": parsed.get("answer", ""),
         "direct_confidence": parsed.get("confidence", None),
         "direct_reasoning_brief": parsed.get("reasoning_brief", ""),
@@ -98,6 +102,7 @@ def main() -> None:
     parser.add_argument("--model", default="gemini-3-flash-preview")
     parser.add_argument("--api-key-file", type=Path, default=None)
     parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--num-samples", type=int, default=1)
     parser.add_argument("--sleep-seconds", type=float, default=1.0)
     parser.add_argument("--timeout-seconds", type=int, default=180)
     parser.add_argument("--use-legacy-vectorengine-keys", action="store_true")
@@ -106,19 +111,24 @@ def main() -> None:
 
     candidates = read_jsonl(args.input)
     done = existing_ids(args.output)
-    pending = [c for c in candidates if c.get("candidate_id") not in done]
+    pending = [
+        (c, sample_index)
+        for c in candidates
+        for sample_index in range(args.num_samples)
+        if f"{c.get('candidate_id')}::{args.model}::{sample_index}" not in done
+    ]
     if args.limit is not None:
         pending = pending[: args.limit]
     client = make_client(args)
 
     success = 0
     failures = []
-    for candidate in pending:
+    for candidate, sample_index in pending:
         try:
-            row = probe_one(client, candidate, args)
+            row = probe_one(client, candidate, args, sample_index)
             append_jsonl(args.output, row)
             success += 1
-            print(json.dumps({"ok": candidate["candidate_id"], "answer": row["direct_answer"]}, ensure_ascii=False))
+            print(json.dumps({"ok": candidate["candidate_id"], "sample_index": sample_index, "answer": row["direct_answer"]}, ensure_ascii=False))
         except Exception as exc:
             failure = {"candidate_id": candidate.get("candidate_id"), "error": str(exc)}
             failures.append(failure)

@@ -213,6 +213,14 @@ V2 60-video attack pilot:
 - Among the 4 options-only-hard MCQs, YouTube direct-video Gemini 3.5 failed 1.
   The strict accepted item asks which hand a comedian consistently uses to hold
   his microphone throughout a stand-up performance.
+- Adversarial distractor mining was then added: wrong open-ended model answers
+  from GT-stage direct probes are fed into distractor generation, equivalent
+  paraphrases of the GT are discarded, and the remaining candidates are rewritten
+  into a unified option style.
+- On the 3 Gemini-3.5 frontier-hard GT cases from the 60-video pilot, adversarial
+  distractors improved strict MCQ acceptance from 0/3 to 2/3. The accepted items
+  used actual model errors such as overcounting Gerald's falls as 6 instead of 5,
+  and confusing the animal sequence as "chimpanzee, vulture, and baboon."
 
 ### Step 5: Verification and Filtering
 
@@ -281,6 +289,8 @@ Interpretation:
   before spending calls on distractors.
 - The current main bottleneck is no longer GT generation; it is adversarial
   distractor generation. Many GT-hard items become easy once choices are shown.
+- Early adversarial distractor mining confirms that direct-model wrong answers
+  are much stronger distractors than free-form generated wrong options.
 
 ### Step 7: Evolution Loop
 
@@ -329,3 +339,5 @@ Success criteria:
 - 2026-05-27: Ran a 60-video attack pilot. GT-stage direct probes produced
   21 mid-tier failures for Gemini 2.5 Flash-Lite and 3 frontier-hard failures
   for Gemini 3.5 Flash; strict MCQ filtering accepted 1 additional item.
+- 2026-05-27: Added wrong-answer-pool distractor generation and verified on the
+  60-video frontier-hard cases that strict MCQ acceptance improved to 2/3.
