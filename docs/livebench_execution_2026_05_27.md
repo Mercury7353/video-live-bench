@@ -288,6 +288,30 @@ V2 evo03 strategy run:
   should run evo03-style generation on more than 100 videos and combine it with
   stronger tool evidence for OCR/tracking/audio-visual verification.
 
+V2 evo03 106-video scale-up:
+
+- Expanded the video-evidence pool from 74 to 106 local videos by processing the
+  remaining 32 ffprobe-valid local videos with the Gemini evidence harness.
+- Reran evo03 strategy-conditioned GT generation on all 106 evidence rows.
+- GT generation produced 82 candidates and rejected 32 single-cue questions.
+- Open-ended validation:
+  - Gemini 3.5 judged: 82; hard cases: 17.
+  - Gemini 2.5 Flash-Lite judged: 81; hard cases: 48.
+  - On the common 81 judged candidates, there were 33 mid-tier cases and 16
+    Gemini-3.5 frontier-hard cases.
+- Converted 33 mid-tier and 16 frontier-hard GT cases into MCQs with adversarial
+  distractors from real model mistakes.
+- Options-only filtering left 12 mid-tier and 5 frontier-hard leak-free MCQs.
+- Direct-video MCQ validation produced:
+  - 3 strict Gemini-3.5 hard MCQs;
+  - 7 mid-tier discriminative MCQs where Gemini 3.5 is correct and Gemini 2.5
+    Flash-Lite is wrong;
+  - 5 calibration MCQs where both video models are correct but options-only fails.
+- Gemini semantic MCQ review kept all 15 candidates.
+- Interpretation: scaling the same evolved strategy from 74 to 106 videos roughly
+  doubled the useful reviewed MCQ yield from 7 candidates to 15 candidates while
+  preserving the same strict validation gates.
+
 ### Step 5: Verification and Filtering
 
 Status: in progress.
@@ -421,3 +445,7 @@ Success criteria:
   discovery tooling, generation-strategy proposal, and strategy-conditioned GT
   generation. Ran evo03 on the same 74 videos and obtained 4 strict hard MCQs,
   1 mid-tier discriminative MCQ, and 2 calibration MCQs after semantic review.
+- 2026-05-27: Expanded evidence coverage from 74 to 106 local videos and reran
+  evo03. The 106-video run produced 82 GT candidates, 33 mid-tier open-ended
+  cases, 16 frontier-hard open-ended cases, and 15 reviewed MCQs after strict
+  options-only/direct-video validation.
