@@ -192,9 +192,13 @@ def read_table(path: Path) -> List[Dict[str, Any]]:
     if suffix == ".parquet":
         try:
             import pandas as pd  # type: ignore
-        except Exception as exc:
-            raise RuntimeError("Reading parquet seed files requires pandas/pyarrow.") from exc
-        return pd.read_parquet(path).to_dict(orient="records")
+            return pd.read_parquet(path).to_dict(orient="records")
+        except Exception:
+            try:
+                import pyarrow.parquet as pq  # type: ignore
+            except Exception as exc:
+                raise RuntimeError("Reading parquet seed files requires pandas or pyarrow.") from exc
+            return pq.read_table(path).to_pylist()
     raise ValueError(f"Unsupported seed file type: {path}")
 
 
